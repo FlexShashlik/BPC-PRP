@@ -16,9 +16,10 @@ find_package(SDL2 REQUIRED)
 find_package(visualization_msgs REQUIRED)
 
 set(SRC
-        src/example.cpp
-        include/example.hpp
         include/SineWave.h
+        src/nodes/io_node.cpp
+        include/nodes/io_node.hpp
+        include/helper.hpp
 )
 
 set(AMENT_LIBS rclcpp std_msgs sensor_msgs cv_bridge image_transport)
