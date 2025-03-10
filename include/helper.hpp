@@ -11,6 +11,7 @@
 static const int MAIN_LOOP_PERIOD_MS = 50;
 static const int TICKS_PER_ROTATION = 576;
 static const double WHEEL_RADIUS_METERS = 0.06517/2;
+static const double WHEEL_BASE_METERS = 0.133;
 static const double ENCODER_POLLING_RATE_MS = 100;
 
 

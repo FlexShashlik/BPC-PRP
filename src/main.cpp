@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
 
                     // --- MOTOR TEST
 
-                    motor_message.data = {255, 127}; // LED 4: White
+                    motor_message.data = {255, 255}; // LED 4: White
                     motor->motor_speeds_publish(motor_message);
 
                 }

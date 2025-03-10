@@ -4,6 +4,7 @@
 
 #include "nodes/motor_node.hpp"
 #include "helper.hpp"
+#include "../include/kinematics.hpp"
 
 namespace nodes {
     MotorNode::MotorNode() : Node("motorNode"), last_time_(this->now()) {
@@ -24,18 +25,24 @@ namespace nodes {
     }
 
     void MotorNode::on_motor_callback(const std_msgs::msg::UInt32MultiArray::SharedPtr msg) {
-        encoder_left_ = msg->data[0];
-        encoder_right_ = msg->data[1];
-        RCLCPP_INFO(this->get_logger(), "Enocder_left: %i", this->encoder_left_);
-        RCLCPP_INFO(this->get_logger(), "Enocder_right: %i", this->encoder_right_);
+        if (!msg->data.empty()) {
+            encoder_left_ = msg->data[0];
+            encoder_right_ = msg->data[1];
+            RCLCPP_INFO(this->get_logger(), "Enocder_left: %u", this->encoder_left_);
+            RCLCPP_INFO(this->get_logger(), "Enocder_right: %u", this->encoder_right_);
+        } else {
+            RCLCPP_WARN(this->get_logger(), "Received empty UInt32MultiArray message.");
+        }
     }
 
     void MotorNode::timer_callback() {
         RCLCPP_INFO(this->get_logger(), "Timer triggered. Publishing uptime...");
 
         auto dLeft = encoder_left_ - encoder_left_last_;
-        auto dRight = encoder_right_ - encoder_right_last_;
+        auto dRight = encoder_right_last_ - encoder_right_; // because of encoder's overflow
         auto dTime = (this->now() - last_time_).seconds();
+
+        RCLCPP_INFO(this->get_logger(), "dTime: %f", dTime);
 
         // Angular velocity in ticks/dT
         wLeft = (dLeft / dTime);
@@ -47,6 +54,22 @@ namespace nodes {
 
         RCLCPP_INFO(this->get_logger(), "Left RPS: %f", wLeft);
         RCLCPP_INFO(this->get_logger(), "Right RPS: %f", wRight);
+
+        double vL = kinematics::calc_wheel_speed(wLeft);
+        double vR = kinematics::calc_wheel_speed(wRight);
+        RCLCPP_INFO(this->get_logger(), "Left speed %f m/s", vL);
+        RCLCPP_INFO(this->get_logger(), "Right speed %f m/s", vR);
+
+        double dV = kinematics::calc_delta_speed(vL, vR);
+        RCLCPP_INFO(this->get_logger(), "Delta speed %f m/s", dV);
+
+        double dAngle = kinematics::calc_delta_angle(vL, vR);
+        RCLCPP_INFO(this->get_logger(), "Delta angle: %f", dAngle);
+
+        kinematics::calc_pos(dV, dAngle);
+        RCLCPP_INFO(this->get_logger(), "X: %f", kinematics::xPos);
+        RCLCPP_INFO(this->get_logger(), "Y: %f", kinematics::yPos);
+        RCLCPP_INFO(this->get_logger(), "Angle: %f", kinematics::anglePos);
 
         encoder_left_last_ = encoder_left_;
         encoder_right_last_ = encoder_right_;

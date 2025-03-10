@@ -22,6 +22,8 @@ set(SRC
         include/helper.hpp
         src/nodes/motor_node.cpp
         include/nodes/motor_node.hpp
+        src/kinematics.cpp
+        include/kinematics.hpp
 )
 
 set(AMENT_LIBS rclcpp std_msgs sensor_msgs cv_bridge image_transport)
