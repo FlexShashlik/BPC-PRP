@@ -7,3 +7,10 @@
     > student@sd151-student-05:~$ env | grep ROS
     ROS_DOMAIN_ID=8
     > student@sd151-student-05:~$ ssh robot@prp-BLUE
+
+## Encoder gives us number of ticks
+        3 periods per motor rotation
+        1:48 gear ratio
+        2 channels
+        2 edges
+    => 3 * 48 * 2 * 2 = 576 pulses per rotation

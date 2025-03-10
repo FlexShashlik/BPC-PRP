@@ -17,8 +17,8 @@ namespace nodes {
         // Destructor (default)
         ~MotorNode() override = default;
 
-        // Function to retireve the last pressed button value
-        //int get_button_pressed() const;
+        double get_left_angular_velocity() const;
+        double get_right_angular_velocity() const;
         void motor_speeds_publish(const std_msgs::msg::UInt8MultiArray &value_to_publish);
     private:
 
@@ -26,12 +26,26 @@ namespace nodes {
         uint32_t encoder_left_ = 0;
         uint32_t encoder_right_ = 0;
 
+        uint32_t encoder_left_last_ = 0;
+        uint32_t encoder_right_last_ = 0;
+
+        // Angular velocity in rotations per second
+        double wLeft = 0;
+        double wRight = 0;
+
         // Subscriber for button press messages
         rclcpp::Subscription<std_msgs::msg::UInt32MultiArray>::SharedPtr motor_subscriber_;
         rclcpp::Publisher<std_msgs::msg::UInt8MultiArray>::SharedPtr motor_publisher_;
 
         // Callback - preprocess received message
         void on_motor_callback(const std_msgs::msg::UInt32MultiArray::SharedPtr msg);
+        void timer_callback();
+
+        double uptime_;
+        rclcpp::TimerBase::SharedPtr timer_;
+
+        // Start time for uptime calculation
+        rclcpp::Time last_time_;
 
     };
 }

@@ -19,6 +19,6 @@ namespace nodes {
 
     void IoNode::rgb_led_publish(const std_msgs::msg::UInt8MultiArray &value_to_publish) {
         led_publisher_->publish(value_to_publish);
-        RCLCPP_INFO(this->get_logger(), "Published leds");
+        //RCLCPP_INFO(this->get_logger(), "Published leds");
     }
 }
