@@ -8,6 +8,8 @@
 
 #include "helper.hpp"
 
+#include <algorithm>
+
 namespace nodes {
     LineNode::LineNode() : Node("lineNode") {
         line_sensor_left_ = 0;
@@ -24,6 +26,8 @@ namespace nodes {
             RCLCPP_INFO(this->get_logger(), "Line_sensor_right: %u", this->line_sensor_right_);
 
             estimate_descrete_line_pose(line_sensor_left_, line_sensor_right_);
+            float analog_pose = get_continuous_line_pose();
+            RCLCPP_INFO(this->get_logger(), "Analog pose: %f mm", analog_pose);
         } else {
             RCLCPP_WARN(this->get_logger(), "Received empty UInt32MultiArray message.");
         }
@@ -50,6 +54,28 @@ namespace nodes {
         else {
             return DiscreteLinePose::LineNone;
         }
+    }
+
+    float LineNode::get_continuous_line_pose() const {
+        const uint16_t min = 30;
+        const int krok = 10;
+        const uint16_t max = 400;
+        const float r = 2; //mm radius snimace
+
+        auto l_clamped = std::clamp(line_sensor_left_,min,max);
+        auto l_discr = l_clamped - (l_clamped % krok) - min; // 0 - (max-min)
+        auto l_norm = (r/(max-min) * l_discr); // mm
+
+        auto r_clamped = std::clamp(line_sensor_right_,min,max);
+        auto r_discr = r_clamped - (r_clamped % krok) - min; // 0 - (max-min)
+        auto r_norm = (r/(max-min) * r_discr); // mm
+
+        return r_norm - l_norm;
+
+
+        //int dir = right - left;
+        //line_sensor_left_
+        //line_sensor_right_
     }
 
 }
