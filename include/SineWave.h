@@ -6,6 +6,7 @@
 #define SINEWAVE_H
 #include <string>
 #include <rclcpp/node.hpp>
+#include "std_msgs/msg/float32.hpp"
 #include <std_msgs/msg/detail/float32__struct.hpp>
 
 class SineWave {

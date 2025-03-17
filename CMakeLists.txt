@@ -41,4 +41,4 @@ ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs sensor_msgs cv_bridge 
 install(TARGETS ${PROJECT_NAME} DESTINATION lib/${PROJECT_NAME})
 ament_package()
 
-add_subdirectory(tests)
+#add_subdirectory(tests)

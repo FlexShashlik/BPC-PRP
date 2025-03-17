@@ -1,5 +1,4 @@
 #include <rclcpp/rclcpp.hpp>
-#include "RosExampleClass.h"
 #include "SineWave.h"
 #include "nodes/io_node.hpp"
 #include "nodes/motor_node.hpp"
