@@ -14,3 +14,8 @@
         2 channels
         2 edges
     => 3 * 48 * 2 * 2 = 576 pulses per rotation
+
+
+## Calibrate line sensors on black line using
+        ros2 topic echo /bpc_prp_robot/line_sensors
+        and write to helper.hpp to LINE_SENSOR_MAX_CALIBRATED_BLACK
