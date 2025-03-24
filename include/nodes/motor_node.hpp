@@ -20,9 +20,10 @@ namespace nodes {
         double get_left_angular_velocity() const;
         double get_right_angular_velocity() const;
 
-        void go_right(double time);
-        void go_left(double time);
-        void go_forward(double time);
+        void go_right();
+        void go_left();
+        void go_forward();
+        void go(uint8_t l, uint8_t r);
 
         // TODO: private
         void motor_speeds_publish(const std_msgs::msg::UInt8MultiArray &value_to_publish);

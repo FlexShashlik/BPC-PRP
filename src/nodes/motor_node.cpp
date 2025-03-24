@@ -93,18 +93,23 @@ namespace nodes {
         return wRight;
     }
 
-    void MotorNode::go_right(double time) {
-        motor_message.data = {127, 135};
+    void MotorNode::go_right() {
+        motor_message.data = {127, MAX_MOTOR_SPEED};
         this->motor_speeds_publish(motor_message);
     }
 
-    void MotorNode::go_left(double time) {
-        motor_message.data = {135, 127};
+    void MotorNode::go_left() {
+        motor_message.data = {MAX_MOTOR_SPEED, 127};
         this->motor_speeds_publish(motor_message);
     }
 
-    void MotorNode::go_forward(double time) {
-        motor_message.data = {132, 132};
+    void MotorNode::go_forward() {
+        motor_message.data = {MAX_MOTOR_SPEED, MAX_MOTOR_SPEED};
+        this->motor_speeds_publish(motor_message);
+    }
+
+    void MotorNode::go(uint8_t l, uint8_t r) {
+        motor_message.data = {l, r};
         this->motor_speeds_publish(motor_message);
     }
 }

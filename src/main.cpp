@@ -20,10 +20,13 @@ int main(int argc, char* argv[]) {
     auto line_sensors = std::make_shared<nodes::LineNode>();
     executor->add_node(line_sensors);
 
+    auto line_loop = std::make_shared<LineLoop>(line_sensors, motor);
+    executor->add_node(line_loop);
+
     auto executor_thread = std::thread([& executor](){executor->spin();});
     while (rclcpp::ok())
     {
-        line_loop::LineLoop(line_sensors, motor);
+
     }
 
     // Shutdown ROS 2
