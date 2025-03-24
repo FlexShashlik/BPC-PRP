@@ -19,6 +19,12 @@ namespace nodes {
 
         double get_left_angular_velocity() const;
         double get_right_angular_velocity() const;
+
+        void go_right(double time);
+        void go_left(double time);
+        void go_forward(double time);
+
+        // TODO: private
         void motor_speeds_publish(const std_msgs::msg::UInt8MultiArray &value_to_publish);
     private:
 
@@ -46,7 +52,7 @@ namespace nodes {
 
         // Start time for uptime calculation
         rclcpp::Time last_time_;
-
+        std_msgs::msg::UInt8MultiArray motor_message;
     };
 }
 

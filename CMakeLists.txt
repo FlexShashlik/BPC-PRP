@@ -26,6 +26,8 @@ set(SRC
         include/kinematics.hpp
         src/nodes/line_node.cpp
         include/nodes/line_node.hpp
+        src/loops/line_loop.cpp
+        include/loops/line_loop.hpp
 )
 
 set(AMENT_LIBS rclcpp std_msgs sensor_msgs cv_bridge image_transport)

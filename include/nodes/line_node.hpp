@@ -38,6 +38,7 @@ namespace nodes {
 
         uint16_t line_sensor_left_ = 0;
         uint16_t line_sensor_right_ = 0;
+        DiscreteLinePose discrete_line_pose_;
     };
 }
 

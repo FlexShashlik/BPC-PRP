@@ -18,6 +18,13 @@ namespace nodes {
         timer_ = this->create_wall_timer(
             std::chrono::milliseconds(static_cast<int>(ENCODER_POLLING_RATE_MS)),
             std::bind(&MotorNode::timer_callback, this));
+
+        motor_message = std_msgs::msg::UInt8MultiArray();
+        motor_message.layout.dim.resize(1);
+        motor_message.layout.dim[0].label = "SPEEDs";
+        motor_message.layout.dim[0].size = 2;
+        motor_message.layout.dim[0].stride = 2;
+        motor_message.layout.data_offset = 0;
     }
 
     // [1] - left motor
@@ -84,5 +91,20 @@ namespace nodes {
     }
     double MotorNode::get_right_angular_velocity() const {
         return wRight;
+    }
+
+    void MotorNode::go_right(double time) {
+        motor_message.data = {127, 135};
+        this->motor_speeds_publish(motor_message);
+    }
+
+    void MotorNode::go_left(double time) {
+        motor_message.data = {135, 127};
+        this->motor_speeds_publish(motor_message);
+    }
+
+    void MotorNode::go_forward(double time) {
+        motor_message.data = {132, 132};
+        this->motor_speeds_publish(motor_message);
     }
 }
