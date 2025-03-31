@@ -17,6 +17,7 @@ public:
     LineLoop(std::shared_ptr<nodes::LineNode> line_sensors, std::shared_ptr<nodes::MotorNode> motor);
     // Destructor (default)
     ~LineLoop() override = default;
+    void Restart();
 private:
     algorithms::Pid pid_;
     void line_loop_timer_callback();
@@ -29,6 +30,7 @@ private:
 
     // Start time for uptime calculation
     rclcpp::Time last_time_;
+    bool isStarted_;
 };
 
 

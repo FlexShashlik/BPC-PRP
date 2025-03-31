@@ -24,9 +24,24 @@ int main(int argc, char* argv[]) {
     executor->add_node(line_loop);
 
     auto executor_thread = std::thread([& executor](){executor->spin();});
+    //line_loop->Restart();
     while (rclcpp::ok())
     {
-
+        switch (io->get_button_pressed()) {
+            case 0:
+            {
+                motor->stop();
+            }
+            break;
+            case 1:
+            {
+                motor->start();
+                line_loop->Restart();
+            }
+            break;
+            default:
+                break;
+        }
     }
 
     // Shutdown ROS 2

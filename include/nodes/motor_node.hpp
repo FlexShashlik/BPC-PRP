@@ -20,6 +20,8 @@ namespace nodes {
         double get_left_angular_velocity() const;
         double get_right_angular_velocity() const;
 
+        void start();
+        void stop();
         void go_right();
         void go_left();
         void go_forward();
@@ -28,7 +30,7 @@ namespace nodes {
         // TODO: private
         void motor_speeds_publish(const std_msgs::msg::UInt8MultiArray &value_to_publish);
     private:
-
+        bool isStopped_ = true;
         // Variable to store the last received button press value
         uint32_t encoder_left_ = 0;
         uint32_t encoder_right_ = 0;

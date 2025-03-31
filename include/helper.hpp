@@ -12,13 +12,13 @@ static const int MAIN_LOOP_PERIOD_MS = 50;
 static const int TICKS_PER_ROTATION = 576;
 static const double WHEEL_RADIUS_METERS = 0.06517/2;
 static const double WHEEL_BASE_METERS = 0.133;
-static const double LOOP_POLLING_RATE_MS = 30;
-static const double ENCODER_POLLING_RATE_MS = 10;
+static const double LOOP_POLLING_RATE_MS = 5;
+static const double ENCODER_POLLING_RATE_MS = 1;
 
 static const uint8_t MIN_MOTOR_SPEED = 127;
-static const uint8_t MAX_MOTOR_SPEED = 140;
+static const uint8_t MAX_MOTOR_SPEED = 135;
 
-static const float LINE_SENSOR_MAX_CALIBRATED_BLACK = 700;
+static const float LINE_SENSOR_MAX_CALIBRATED_BLACK = 200;
 static const int LINE_SENSORS_DEADZONE = 15;
 
 namespace Topic {

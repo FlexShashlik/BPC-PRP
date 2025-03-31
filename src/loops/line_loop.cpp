@@ -11,7 +11,7 @@
 #include "nodes/motor_node.hpp"
 
 LineLoop::LineLoop (std::shared_ptr<nodes::LineNode> line_sensors, std::shared_ptr<nodes::MotorNode> motor) : Node(
-    "lineLoopNode"), pid_(10, 0.01, 0.05), last_time_(this->now()) {
+    "lineLoopNode"), pid_(3, 0.03, 0), last_time_(this->now()) {
     // Create a timer
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(static_cast<int>(LOOP_POLLING_RATE_MS)),
@@ -19,9 +19,18 @@ LineLoop::LineLoop (std::shared_ptr<nodes::LineNode> line_sensors, std::shared_p
 
     line_sensors_ = line_sensors;
     motor_ = motor;
+    isStarted_ = false;
+}
+
+void LineLoop::Restart() {
+    pid_.reset();
+    last_time_ = this->now();
+    isStarted_ = true;
 }
 
 void LineLoop::line_loop_timer_callback() {
+    if (!isStarted_)
+        return;
     // BANG-BANG
     {
         /*switch (line_sensors_->get_discrete_line_pose()) {

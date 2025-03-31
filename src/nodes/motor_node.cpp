@@ -44,6 +44,14 @@ namespace nodes {
         }
     }
 
+    void MotorNode::start() {
+        isStopped_ = false;
+    }
+
+    void MotorNode::stop() {
+        isStopped_ = true;
+    }
+
     void MotorNode::timer_callback() {
         RCLCPP_DEBUG(this->get_logger(), "Timer triggered. Publishing uptime...");
 
@@ -94,21 +102,29 @@ namespace nodes {
     }
 
     void MotorNode::go_right() {
+        if (isStopped_)
+            return;
         motor_message.data = {127, MAX_MOTOR_SPEED};
         this->motor_speeds_publish(motor_message);
     }
 
     void MotorNode::go_left() {
+        if (isStopped_)
+            return;
         motor_message.data = {MAX_MOTOR_SPEED, 127};
         this->motor_speeds_publish(motor_message);
     }
 
     void MotorNode::go_forward() {
+        if (isStopped_)
+            return;
         motor_message.data = {MAX_MOTOR_SPEED, MAX_MOTOR_SPEED};
         this->motor_speeds_publish(motor_message);
     }
 
     void MotorNode::go(uint8_t l, uint8_t r) {
+        if (isStopped_)
+            return;
         motor_message.data = {l, r};
         this->motor_speeds_publish(motor_message);
     }
