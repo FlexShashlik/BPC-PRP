@@ -101,14 +101,14 @@ namespace nodes {
         return wRight;
     }
 
-    void MotorNode::go_right() {
+    void MotorNode::go_left() {
         if (isStopped_)
             return;
         motor_message.data = {127, MAX_MOTOR_SPEED};
         this->motor_speeds_publish(motor_message);
     }
 
-    void MotorNode::go_left() {
+    void MotorNode::go_right() {
         if (isStopped_)
             return;
         motor_message.data = {MAX_MOTOR_SPEED, 127};

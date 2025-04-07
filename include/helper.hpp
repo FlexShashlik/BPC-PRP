@@ -16,10 +16,12 @@ static const double LOOP_POLLING_RATE_MS = 5;
 static const double ENCODER_POLLING_RATE_MS = 1;
 
 static const uint8_t MIN_MOTOR_SPEED = 127;
-static const uint8_t MAX_MOTOR_SPEED = 135;
+static const uint8_t MAX_MOTOR_SPEED = 150;
 
 static const float LINE_SENSOR_MAX_CALIBRATED_BLACK = 200;
 static const int LINE_SENSORS_DEADZONE = 15;
+
+static const float MIN_FRONT_DISTANCE = 0.35f;
 
 namespace Topic {
     const std::string buttons = "/bpc_prp_robot/buttons";
@@ -27,6 +29,7 @@ namespace Topic {
     const std::string set_motor_speeds = "/bpc_prp_robot/set_motor_speeds";
     const std::string encoders = "/bpc_prp_robot/encoders";
     const std::string line_sensors = "/bpc_prp_robot/line_sensors";
+    const std::string lidar = "/bpc_prp_robot/lidar";
 };
 
 namespace Frame {
@@ -34,5 +37,6 @@ namespace Frame {
     const std::string robot = "robot";
     const std::string lidar = "lidar";
 };
+
 
 #endif //HELPER_HPP

@@ -30,6 +30,10 @@ set(SRC
         include/loops/line_loop.hpp
         src/algorithms/pid.cpp
         include/algorithms/pid.hpp
+        src/nodes/lidar_node.cpp
+        include/nodes/lidar_node.hpp
+        src/algorithms/lidar_filtr.cpp
+        include/algorithms/lidar_filtr.hpp
 )
 
 set(AMENT_LIBS rclcpp std_msgs sensor_msgs cv_bridge image_transport)

@@ -22,8 +22,8 @@ namespace nodes {
         if (!msg->data.empty()) {
             line_sensor_left_ = msg->data[0];
             line_sensor_right_ = msg->data[1];
-            RCLCPP_INFO(this->get_logger(), "Line_sensor_left: %u", this->line_sensor_left_);
-            RCLCPP_INFO(this->get_logger(), "Line_sensor_right: %u", this->line_sensor_right_);
+            RCLCPP_DEBUG(this->get_logger(), "Line_sensor_left: %u", this->line_sensor_left_);
+            RCLCPP_DEBUG(this->get_logger(), "Line_sensor_right: %u", this->line_sensor_right_);
 
             discrete_line_pose_ = estimate_descrete_line_pose(line_sensor_left_, line_sensor_right_);
             float analog_pose = get_continuous_line_pose();
@@ -40,15 +40,15 @@ namespace nodes {
 
         // Both on white
         if (dir >= -LINE_SENSORS_DEADZONE  && dir <= LINE_SENSORS_DEADZONE) {
-            RCLCPP_INFO(this->get_logger(), "White on both");
+            RCLCPP_DEBUG(this->get_logger(), "White on both");
             return DiscreteLinePose::LineNone;
         }
         else if (dir > LINE_SENSORS_DEADZONE) {
-            RCLCPP_INFO(this->get_logger(), "Line on right");
+            RCLCPP_DEBUG(this->get_logger(), "Line on right");
             return DiscreteLinePose::LineOnRight;
         }
         else if (dir < -LINE_SENSORS_DEADZONE) {
-            RCLCPP_INFO(this->get_logger(), "Line on left");
+            RCLCPP_DEBUG(this->get_logger(), "Line on left");
             return DiscreteLinePose::LineOnLeft;
         }
         else {

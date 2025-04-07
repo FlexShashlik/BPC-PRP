@@ -4,6 +4,7 @@
 #include "nodes/line_node.hpp"
 #include "nodes/motor_node.hpp"
 #include "loops/line_loop.hpp"
+#include "nodes/lidar_node.hpp"
 
 int main(int argc, char* argv[]) {
     rclcpp::init(argc, argv);
@@ -20,7 +21,10 @@ int main(int argc, char* argv[]) {
     auto line_sensors = std::make_shared<nodes::LineNode>();
     executor->add_node(line_sensors);
 
-    auto line_loop = std::make_shared<LineLoop>(line_sensors, motor);
+    auto lidar_node = std::make_shared<nodes::LidarNode>();
+    executor->add_node(lidar_node);
+
+    auto line_loop = std::make_shared<LineLoop>(lidar_node, line_sensors, motor);
     executor->add_node(line_loop);
 
     auto executor_thread = std::thread([& executor](){executor->spin();});
