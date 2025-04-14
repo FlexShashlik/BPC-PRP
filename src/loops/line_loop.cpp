@@ -12,7 +12,7 @@
 #include "nodes/motor_node.hpp"
 
 LineLoop::LineLoop (std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::LidarNode> lidar, std::shared_ptr<nodes::LineNode> line_sensors, std::shared_ptr<nodes::MotorNode> motor) : Node(
-    "lineLoopNode"), pid_(40, 0.03, 0), last_time_(this->now()) {
+    "lineLoopNode"), pid_(30, 0.03, 0), last_time_(this->now()) {
     this->get_logger().set_level(rclcpp::Logger::Level::Info);
     // Create a timer
     timer_ = this->create_wall_timer(
@@ -171,13 +171,13 @@ void LineLoop::line_loop_timer_callback() {
 
                 if (results.right > MIN_OPEN_SIDE_DISTANCE)
                 {
-                    yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
+                    yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
                     //yaw_ref_ = yaw_start_ + 90;
                     RCLCPP_INFO(this->get_logger(), "TURNING RIGHT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
                 }
                 else if (results.left > MIN_OPEN_SIDE_DISTANCE)
                 {
-                    yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
+                    yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
                     //yaw_ref_ = yaw_start_ - 90;
                     RCLCPP_INFO(this->get_logger(), "TURNING LEFT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
                 }
@@ -206,8 +206,8 @@ void LineLoop::line_loop_timer_callback() {
             {
                 //float outputPid = pid_.step(yaw_error, LOOP_POLLING_RATE_MS);
                 float outputPid = 0.1 * yaw_error;
-                uint8_t l = MAX_TURNING_MOTOR_SPEED + outputPid;
-                uint8_t r = MAX_TURNING_MOTOR_SPEED - outputPid;
+                uint8_t l = MAX_TURNING_MOTOR_SPEED - outputPid;
+                uint8_t r = MAX_TURNING_MOTOR_SPEED + outputPid;
 
                 uint8_t outL, outR;
                 outL = std::clamp(l, MIN_MOTOR_SPEED, MAX_TURNING_MOTOR_SPEED);

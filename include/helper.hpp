@@ -26,11 +26,11 @@ static const float LINE_SENSOR_MAX_CALIBRATED_BLACK = 200;
 static const int LINE_SENSORS_DEADZONE = 15;
 
 // In meters
-static const float MIN_FRONT_DISTANCE = 0.3f;
+static const float MIN_FRONT_DISTANCE = 0.18f;
 static const float MIN_OPEN_SIDE_DISTANCE = 0.35f;
 
 // In degrees
-static const float MAX_YAW_ERROR = 5.f;
+static const float MAX_YAW_ERROR = 10.f;
 
 namespace Topic {
     const std::string buttons = "/bpc_prp_robot/buttons";
