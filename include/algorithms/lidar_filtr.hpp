@@ -14,26 +14,6 @@
 #include "helper.hpp"
 
 namespace algorithms {
-    constexpr double deg2rad(const double deg) {
-        return deg * M_PI / 180.0;
-    }
-
-    // Returns -1 if vector is empty
-    inline float mean(const std::vector<float>& vec) {
-        if (vec.empty()) {
-            // Handle empty vector case (avoid division by zero)
-            std::cerr << "Vector is empty, cannot calculate mean." << std::endl;
-            return -1.0f;  // or some other error value
-        }
-
-        // Sum all elements in the vector using std::accumulate
-        float sum = std::accumulate(vec.begin(), vec.end(), 0.0f);
-
-        // Calculate mean
-        float mean = sum / vec.size();
-        return mean;
-    }
-
     // Structure to store filtered average distances in key directions
     struct LidarFiltrResults {
         float front;

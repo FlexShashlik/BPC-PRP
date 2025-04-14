@@ -34,6 +34,10 @@ set(SRC
         include/nodes/lidar_node.hpp
         src/algorithms/lidar_filtr.cpp
         include/algorithms/lidar_filtr.hpp
+        src/nodes/imu_node.cpp
+        include/nodes/imu_node.hpp
+        include/algorithms/planar_imu_integrator.hpp
+        src/algorithms/planar_imu_integrator.cpp
 )
 
 set(AMENT_LIBS rclcpp std_msgs sensor_msgs cv_bridge image_transport)

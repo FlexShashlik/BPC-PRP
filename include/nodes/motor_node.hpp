@@ -50,7 +50,6 @@ namespace nodes {
         void on_motor_callback(const std_msgs::msg::UInt32MultiArray::SharedPtr msg);
         void timer_callback();
 
-        double uptime_;
         rclcpp::TimerBase::SharedPtr timer_;
 
         // Start time for uptime calculation

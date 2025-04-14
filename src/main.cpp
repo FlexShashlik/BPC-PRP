@@ -4,6 +4,7 @@
 #include "nodes/line_node.hpp"
 #include "nodes/motor_node.hpp"
 #include "loops/line_loop.hpp"
+#include "nodes/imu_node.hpp"
 #include "nodes/lidar_node.hpp"
 
 int main(int argc, char* argv[]) {
@@ -24,13 +25,20 @@ int main(int argc, char* argv[]) {
     auto lidar_node = std::make_shared<nodes::LidarNode>();
     executor->add_node(lidar_node);
 
-    auto line_loop = std::make_shared<LineLoop>(lidar_node, line_sensors, motor);
+    auto imu = std::make_shared<nodes::ImuNode>();
+    executor->add_node(imu);
+
+    auto line_loop = std::make_shared<LineLoop>(imu, lidar_node, line_sensors, motor);
     executor->add_node(line_loop);
 
     auto executor_thread = std::thread([& executor](){executor->spin();});
-    //line_loop->Restart();
     while (rclcpp::ok())
     {
+        if (imu->getMode() == nodes::ImuNodeMode::CALIBRATE)
+        {
+            continue;
+        }
+
         switch (io->get_button_pressed()) {
             case 0:
             {
@@ -41,6 +49,8 @@ int main(int argc, char* argv[]) {
             {
                 motor->start();
                 line_loop->Restart();
+                //imu.reset();
+                // isCalibrated = false;
             }
             break;
             default:
