@@ -14,23 +14,23 @@ static const int MAIN_LOOP_PERIOD_MS = 50;
 static const int TICKS_PER_ROTATION = 576;
 static const double WHEEL_RADIUS_METERS = 0.06517/2;
 static const double WHEEL_BASE_METERS = 0.133;
-static const double LOOP_POLLING_RATE_MS = 5;
+static const double LOOP_POLLING_RATE_MS = 10;
 static const double ENCODER_POLLING_RATE_MS = 1;
 
 static const uint8_t MIN_MOTOR_SPEED = 127;
-static const uint8_t MAX_MOTOR_SPEED = 150;
-static const uint8_t MAX_TURNING_MOTOR_SPEED = 135;
+static const uint8_t MAX_MOTOR_SPEED = 138;
+static const uint8_t MAX_TURNING_MOTOR_SPEED = 5;
 
 
 static const float LINE_SENSOR_MAX_CALIBRATED_BLACK = 200;
 static const int LINE_SENSORS_DEADZONE = 15;
 
 // In meters
-static const float MIN_FRONT_DISTANCE = 0.18f;
+static const float MIN_FRONT_DISTANCE = 0.21f;
 static const float MIN_OPEN_SIDE_DISTANCE = 0.35f;
 
 // In degrees
-static const float MAX_YAW_ERROR = 10.f;
+static const float MAX_YAW_ERROR = 7.f;
 
 namespace Topic {
     const std::string buttons = "/bpc_prp_robot/buttons";
@@ -70,5 +70,10 @@ constexpr double deg2rad(const double deg) {
 constexpr double rad2deg(const double rad) {
     return rad * 180.0 / M_PI;
 }
+
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
 
 #endif //HELPER_HPP

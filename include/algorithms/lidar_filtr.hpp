@@ -20,6 +20,8 @@ namespace algorithms {
         float back;
         float left;
         float right;
+        float front_right;
+        float front_left;
     };
 
     class LidarFiltr {
@@ -33,9 +35,12 @@ namespace algorithms {
             std::vector<float> right{};
             std::vector<float> front{};
             std::vector<float> back{};
+            std::vector<float> front_right{};
+            std::vector<float> front_left{};
 
             // TODO: Define how wide each directional sector should be (in radians)
-            constexpr float angle_range = deg2rad(10);
+            constexpr float front_angle_range = deg2rad(5);
+            constexpr float angle_range = deg2rad(15);
 
             // Compute the angular step between each range reading
             auto angle_step = (angle_end - angle_start) / points.size();
@@ -49,7 +54,7 @@ namespace algorithms {
                 }
 
                 // TODO: Sort the value into the correct directional bin based on angle
-                if (angle >= M_PI-angle_range || angle < -M_PI+angle_range) {
+                if (angle >= M_PI-front_angle_range || angle < -M_PI+front_angle_range) {
                     front.push_back(points[i]);
                 } else if (angle >= -M_PI/2-angle_range && angle < -M_PI/2+angle_range) {
                     left.push_back(points[i]);
@@ -57,6 +62,12 @@ namespace algorithms {
                     back.push_back(points[i]);
                 } else if (angle >= M_PI/2-angle_range && angle < M_PI/2+angle_range) {
                     right.push_back(points[i]);
+                }
+
+                if (angle >= -M_PI/4-angle_range && angle < -M_PI/4+angle_range) {
+                    front_left.push_back(points[i]);
+                } else if (angle >= M_PI/4-angle_range && angle < M_PI/4+angle_range) {
+                    front_right.push_back(points[i]);
                 }
             }
 
@@ -66,6 +77,8 @@ namespace algorithms {
                 .back = mean(back),
                 .left = mean(left),
                 .right = mean(right),
+                .front_right = mean(front_right),
+                .front_left = mean(front_left),
             };
         }
     };

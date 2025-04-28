@@ -29,6 +29,7 @@ float nodes::ImuNode::getIntegratedResults() {
 
 void nodes::ImuNode::reset_imu() {
     planar_integrator_.reset();
+    //mode = ImuNodeMode::CALIBRATE;
 }
 
 void nodes::ImuNode::calibrate(float gyro_z) {

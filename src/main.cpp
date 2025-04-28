@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
             {
                 motor->start();
                 line_loop->Restart();
-                //imu.reset();
+                //imu->reset_imu();
                 // isCalibrated = false;
             }
             break;

@@ -12,7 +12,7 @@
 #include "nodes/motor_node.hpp"
 
 LineLoop::LineLoop (std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::LidarNode> lidar, std::shared_ptr<nodes::LineNode> line_sensors, std::shared_ptr<nodes::MotorNode> motor) : Node(
-    "lineLoopNode"), pid_(30, 0.03, 0), last_time_(this->now()) {
+    "lineLoopNode"), pid_(20, 0, 5), last_time_(this->now()) {
     this->get_logger().set_level(rclcpp::Logger::Level::Info);
     // Create a timer
     timer_ = this->create_wall_timer(
@@ -147,8 +147,12 @@ void LineLoop::line_loop_timer_callback() {
         // If front is blocked and one side is open → switch to TURNING
         {
             results = lidar_->GetLidarFiltrResults();
-            if (results.front > front_limit_) {
-                front_limit_ = MIN_FRONT_DISTANCE;
+            if (results.front == -1 || results.right == -1 || results.left == -1) {
+                RCLCPP_INFO(this->get_logger(), "Empty, continue..");
+                return;
+            }
+
+            if (results.front > MIN_FRONT_DISTANCE && results.right < MIN_OPEN_SIDE_DISTANCE && results.left < MIN_OPEN_SIDE_DISTANCE) {
                 // PID using LIDAR
                 float inputPid = results.right - results.left;
                 float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
@@ -157,11 +161,14 @@ void LineLoop::line_loop_timer_callback() {
                 uint8_t r = MAX_MOTOR_SPEED - outputPid;
 
                 uint8_t outL, outR;
-                outL = std::clamp(l, MIN_MOTOR_SPEED, MAX_MOTOR_SPEED);
-                outR = std::clamp(r, MIN_MOTOR_SPEED, MAX_MOTOR_SPEED);
+                outL = std::clamp(l, (uint8_t)120, MAX_MOTOR_SPEED);
+                outR = std::clamp(r, (uint8_t)120, MAX_MOTOR_SPEED);
 
                 motor_->go(outL, outR);
                 // END PID using LIDAR
+            }
+            else if (results.front > MIN_FRONT_DISTANCE) {
+                motor_->go(132, 132);
             }
             else
             {
@@ -204,17 +211,18 @@ void LineLoop::line_loop_timer_callback() {
             }
             else
             {
-                //float outputPid = pid_.step(yaw_error, LOOP_POLLING_RATE_MS);
-                float outputPid = 0.1 * yaw_error;
-                uint8_t l = MAX_TURNING_MOTOR_SPEED - outputPid;
-                uint8_t r = MAX_TURNING_MOTOR_SPEED + outputPid;
 
-                uint8_t outL, outR;
-                outL = std::clamp(l, MIN_MOTOR_SPEED, MAX_TURNING_MOTOR_SPEED);
-                outR = std::clamp(r, MIN_MOTOR_SPEED, MAX_TURNING_MOTOR_SPEED);
+                //float outputPid = 0.1 * yaw_error;
+                uint8_t l = 127 - (MAX_TURNING_MOTOR_SPEED * sgn(yaw_error));
+                uint8_t r = 127 + (MAX_TURNING_MOTOR_SPEED * sgn(yaw_error));
 
-                motor_->go(outL, outR);
-                RCLCPP_INFO(this->get_logger(), "PID :: outL:%u outR:%u PID:%f", outL, outR, outputPid);
+                // uint8_t outL, outR;
+                // outL = std::clamp(l, MIN_MOTOR_SPEED, MAX_TURNING_MOTOR_SPEED);
+                // outR = std::clamp(r, MIN_MOTOR_SPEED, MAX_TURNING_MOTOR_SPEED);
+
+                motor_->go(l, r);
+                RCLCPP_INFO(this->get_logger(), "PID :: outL:%u outR:%u PID:%f", l, r);
+                //RCLCPP_INFO(this->get_logger(), "PID :: outL:%u outR:%u PID:%f", outL, outR, outputPid);
             }
         }
         break;
