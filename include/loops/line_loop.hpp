@@ -52,6 +52,7 @@ private:
 
     float yaw_start_;
     float yaw_ref_;
+    float yaw_null_;
 
     bool isCalibrated_;
 

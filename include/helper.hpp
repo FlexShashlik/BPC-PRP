@@ -26,7 +26,7 @@ static const float LINE_SENSOR_MAX_CALIBRATED_BLACK = 200;
 static const int LINE_SENSORS_DEADZONE = 15;
 
 // In meters
-static const float MIN_FRONT_DISTANCE = 0.65f;
+static const float MIN_FRONT_DISTANCE = 0.24f;
 static const float WALL_DISTANCE = 0.4f;
 static const float MIN_OPEN_SIDE_DISTANCE = 0.35f;
 

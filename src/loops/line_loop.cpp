@@ -13,7 +13,7 @@
 #include "nodes/motor_node.hpp"
 
 LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::LidarNode> lidar, std::shared_ptr<nodes::LineNode> line_sensors, std::shared_ptr<nodes::MotorNode> motor) : Node(
-    "lineLoopNode"), pid_(12, 5.3, 9.8), last_time_(this->now()) {
+    "lineLoopNode"), pid_(10, 0, 0), last_time_(this->now()) {
     this->get_logger().set_level(rclcpp::Logger::Level::Info);
     // Create a timer
     timer_ = this->create_wall_timer(
@@ -52,6 +52,7 @@ void LineLoop::line_loop_timer_callback() {
         state_ = LineLoopState::CORRIDOR_FOLLOWING;
         RCLCPP_INFO(this->get_logger(), "State CORRIDOR_FOLLOWING");
     }
+
     // BANG-BANG
     {
         /*switch (line_sensors_->get_discrete_line_pose()) {
@@ -136,18 +137,172 @@ void LineLoop::line_loop_timer_callback() {
     }
     // END Lidar only PID
 
-    // STATE MACHINE
+    // STATE MACHINE_OLD
+    {
+        /*
+       //algorithms::LidarFiltrResults results;
+
+       switch (state_) {
+           case LineLoopState::CALIBRATION:
+           // Wait until enough samples are collected
+           // Once done, switch to CORRIDOR_FOLLOWING
+           break;
+
+           case LineLoopState::CORRIDOR_FOLLOWING:
+           // Keep centered using P/PID based on side distances
+           // If front is blocked and one side is open → switch to TURNING
+           {
+               results = lidar_->GetLidarFiltrResults();
+               if (results.front == -1 || results.right == -1 || results.left == -1) {
+                   RCLCPP_INFO(this->get_logger(), "Empty, continue..");
+
+                   if (results.left == -1) {
+                       RCLCPP_INFO(this->get_logger(), "Empty left, too close probably, substitute..");
+                       results.left = 0;
+                   }
+
+                   if (results.right == -1) {
+                       RCLCPP_INFO(this->get_logger(), "Empty right, too close probably, substitute..");
+                       results.right = 0;
+                   }
+
+                   if (results.front == -1)
+                       return;
+               }
+
+               if (results.front > MIN_FRONT_DISTANCE && results.right < MIN_OPEN_SIDE_DISTANCE && results.left < MIN_OPEN_SIDE_DISTANCE) {
+                   // PID using LIDAR
+                   float inputPid = results.front_right - results.front_left;
+                   float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
+
+                   uint8_t l = MAX_MOTOR_SPEED + outputPid;
+                   uint8_t r = MAX_MOTOR_SPEED - outputPid;
+
+                   uint8_t outL, outR;
+                   outL = std::clamp(l, (uint8_t)120, MAX_MOTOR_SPEED);
+                   outR = std::clamp(r, (uint8_t)120, MAX_MOTOR_SPEED);
+
+                   motor_->go(outL, outR);
+                   // END PID using LIDAR
+               }
+               else if (!camera_->Arucos.empty() && (results.right >= MIN_OPEN_SIDE_DISTANCE || results.left >= MIN_OPEN_SIDE_DISTANCE)) {
+                   auto currentTag = camera_->Arucos.back();
+                   camera_->Arucos.pop_back();
+
+                   switch (currentTag) {
+                       case ArucoType::TreasureStraight:
+                       case ArucoType::Straight:
+                       {
+                           if (results.front > MIN_FRONT_DISTANCE - WALL_DISTANCE)
+                           {
+                               motor_->go(132, 132);
+                           }
+                       }
+                       break;
+                       case ArucoType::TreasureLeft:
+                       case ArucoType::Left:
+                       {
+                           yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
+                           RCLCPP_INFO(this->get_logger(), "TURNING LEFT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                       }
+                       break;
+                       case ArucoType::TreasureRight:
+                       case ArucoType::Right:
+                       {
+                           yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
+                           RCLCPP_INFO(this->get_logger(), "TURNING RIGHT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                       }
+                       break;
+                       // case ArucoType::TreasureStraight:
+                       // {
+                       //
+                       // }
+                       // break;
+                       // case ArucoType::TreasureLeft:
+                       // {
+                       //
+                       // }
+                       // break;
+                       // case ArucoType::TreasureRight:
+                       // {
+                       //
+                       // }
+                       break;
+                       default:
+                           RCLCPP_ERROR(this->get_logger(), "UNKNOWN TAG!!!");
+                           break;
+                   }
+               }
+               else if (results.front > MIN_FRONT_DISTANCE - WALL_DISTANCE) {
+                   motor_->go(132, 132);
+               }
+               else
+               {
+                   state_ = LineLoopState::TURNING;
+                   yaw_start_ = imu_->getIntegratedResults();
+                   RCLCPP_INFO(this->get_logger(), "State TURNING from: %.2f°", yaw_start_);
+
+                   if (results.right > MIN_OPEN_SIDE_DISTANCE)
+                   {
+                       yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
+                       RCLCPP_INFO(this->get_logger(), "TURNING RIGHT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                   }
+                   else if (results.left > MIN_OPEN_SIDE_DISTANCE)
+                   {
+                       yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
+                       RCLCPP_INFO(this->get_logger(), "TURNING LEFT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                   }
+                   else
+                   {
+                       yaw_ref_ = yaw_start_ + 180;
+                       RCLCPP_INFO(this->get_logger(), "TURNING 180 from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                   }
+               }
+           }
+           break;
+
+           case LineLoopState::TURNING:
+           // Use IMU to track rotation
+           // Rotate until yaw changes by ±90°
+           // Then return to CORRIDOR_FOLLOWING
+           {
+               float current_yaw = imu_->getIntegratedResults();
+               float yaw_error = yaw_ref_ - current_yaw;
+               if (std::abs(yaw_error) < MAX_YAW_ERROR)
+               {
+                   state_ = LineLoopState::CORRIDOR_FOLLOWING;
+                   RCLCPP_INFO(this->get_logger(), "State CORRIDOR FOLLOWING yaw_start: %.2f°, yaw_ref: %.2f°, current_yaw: %.2f°", yaw_start_, yaw_ref_, current_yaw);
+               }
+               else
+               {
+                   uint8_t l = 127 - (MAX_TURNING_MOTOR_SPEED * sgn(yaw_error));
+                   uint8_t r = 127 + (MAX_TURNING_MOTOR_SPEED * sgn(yaw_error));
+
+                   motor_->go(l, r);
+                   RCLCPP_INFO(this->get_logger(), "PID :: outL:%u outR:%u PID:%f", l, r);
+               }
+           }
+           break;
+       }
+    */
+    }
+
+    // STATE MACHINE_EXPERIMENTAL
     algorithms::LidarFiltrResults results;
     switch (state_) {
         case LineLoopState::CALIBRATION:
         // Wait until enough samples are collected
         // Once done, switch to CORRIDOR_FOLLOWING
+        yaw_null_ = imu_->getIntegratedResults();
+        RCLCPP_INFO(this->get_logger(), "State CALLIBRATION yaw_null: %.2f°", yaw_null_);
         break;
 
         case LineLoopState::CORRIDOR_FOLLOWING:
         // Keep centered using P/PID based on side distances
         // If front is blocked and one side is open → switch to TURNING
         {
+
+            // LIDAR FILTRATION - must be function
             results = lidar_->GetLidarFiltrResults();
             if (results.front == -1 || results.right == -1 || results.left == -1) {
                 RCLCPP_INFO(this->get_logger(), "Empty, continue..");
@@ -166,106 +321,90 @@ void LineLoop::line_loop_timer_callback() {
                     return;
             }
 
-            if (results.front > MIN_FRONT_DISTANCE && results.right < MIN_OPEN_SIDE_DISTANCE && results.left < MIN_OPEN_SIDE_DISTANCE) {
-                // PID using LIDAR
-                float inputPid = results.front_right - results.front_left;
-                float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
 
-                uint8_t l = MAX_MOTOR_SPEED + outputPid;
-                uint8_t r = MAX_MOTOR_SPEED - outputPid;
-
-                uint8_t outL, outR;
-                outL = std::clamp(l, (uint8_t)120, MAX_MOTOR_SPEED);
-                outR = std::clamp(r, (uint8_t)120, MAX_MOTOR_SPEED);
-
-                motor_->go(outL, outR);
-                // END PID using LIDAR
-            }
-            else if (!camera_->Arucos.empty() && (results.right >= MIN_OPEN_SIDE_DISTANCE || results.left >= MIN_OPEN_SIDE_DISTANCE)) {
-                auto currentTag = camera_->Arucos.back();
-                camera_->Arucos.pop_back();
-
-                switch (currentTag) {
-                    case ArucoType::TreasureStraight:
-                    case ArucoType::Straight:
-                    {
-                        if (results.front > MIN_FRONT_DISTANCE - WALL_DISTANCE)
-                        {
-                            motor_->go(132, 132);
-                        }
-                    }
-                    break;
-                    case ArucoType::TreasureLeft:
-                    case ArucoType::Left:
-                    {
-                        yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
-                        RCLCPP_INFO(this->get_logger(), "TURNING LEFT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
-                    }
-                    break;
-                    case ArucoType::TreasureRight:
-                    case ArucoType::Right:
-                    {
-                        yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
-                        RCLCPP_INFO(this->get_logger(), "TURNING RIGHT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
-                    }
-                    break;
-                    // case ArucoType::TreasureStraight:
-                    // {
-                    //
-                    // }
-                    // break;
-                    // case ArucoType::TreasureLeft:
-                    // {
-                    //
-                    // }
-                    // break;
-                    // case ArucoType::TreasureRight:
-                    // {
-                    //
-                    // }
-                    break;
-                    default:
-                        RCLCPP_ERROR(this->get_logger(), "UNKNOWN TAG!!!");
-                        break;
-                }
-            }
-            else if (results.front > MIN_FRONT_DISTANCE - WALL_DISTANCE) {
-                motor_->go(132, 132);
-            }
-            else
+            if (results.front > MIN_FRONT_DISTANCE)
             {
-                state_ = LineLoopState::TURNING;
-                yaw_start_ = imu_->getIntegratedResults();
-                RCLCPP_INFO(this->get_logger(), "State TURNING from: %.2f°", yaw_start_);
+                if (results.left < MIN_OPEN_SIDE_DISTANCE && results.right < MIN_OPEN_SIDE_DISTANCE)
+                {
+                    // must be normal PID
+                    //float current_yaw = imu_->getIntegratedResults();
 
-                if (results.right > MIN_OPEN_SIDE_DISTANCE)
-                {
-                    yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
-                    //yaw_ref_ = yaw_start_ + 90;
-                    RCLCPP_INFO(this->get_logger(), "TURNING RIGHT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                    //float dif_yaw = current_yaw - yaw_null_;
+
+                    //RCLCPP_INFO(this->get_logger(), "State CORRIDOR_FOLLOWING PID dif_yaw: %.2f°", current_yaw);
+
+                    float inputPid = results.front_right - results.front_left;
+                    float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
+
+                    uint8_t l = MAX_MOTOR_SPEED + outputPid;
+                    uint8_t r = MAX_MOTOR_SPEED - outputPid;
+
+                    uint8_t outL, outR;
+                    outL = std::clamp(l, (uint8_t)120, MAX_MOTOR_SPEED);
+                    outR = std::clamp(r, (uint8_t)120, MAX_MOTOR_SPEED);
+
+                    motor_->go(outL, outR);
                 }
-                else if (results.left > MIN_OPEN_SIDE_DISTANCE)
+                else if (results.left > MIN_OPEN_SIDE_DISTANCE && results.right < MIN_OPEN_SIDE_DISTANCE)
                 {
-                    yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
-                    //yaw_ref_ = yaw_start_ - 90;
-                    RCLCPP_INFO(this->get_logger(), "TURNING LEFT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                    // must be qr check and if to state turn
+                    motor_->go(135, 135);
+                    //state_ = LineLoopState::TURNING;
+                }
+                else if (results.right > MIN_OPEN_SIDE_DISTANCE && results.left < MIN_OPEN_SIDE_DISTANCE)
+                {
+                    // must be qr check and if to state turn
+                    motor_->go(135, 135);
+                    //state_ = LineLoopState::TURNING;
                 }
                 else
                 {
-                    yaw_ref_ = yaw_start_ + 180;
-                    RCLCPP_INFO(this->get_logger(), "TURNING 180 from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                    // must be qr check and if to state turn
+                    motor_->go(135, 135);
+                    //state_ = LineLoopState::TURNING;
+                }
+            }
+            else
+            {
+                yaw_start_ = imu_->getIntegratedResults();
+
+                if (results.left < MIN_OPEN_SIDE_DISTANCE && results.right < MIN_OPEN_SIDE_DISTANCE)
+                {
+                    // turning to left
+                    yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
+                    state_ = LineLoopState::TURNING;
+                }
+                else if (results.left > MIN_OPEN_SIDE_DISTANCE && results.right < MIN_OPEN_SIDE_DISTANCE)
+                {
+                    // turning to right
+                    yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
+                    state_ = LineLoopState::TURNING;
+                }
+                else if (results.right > MIN_OPEN_SIDE_DISTANCE && results.left < MIN_OPEN_SIDE_DISTANCE)
+                {
+                    // turning to left
+                    yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
+                    state_ = LineLoopState::TURNING;
+                }
+                else
+                {
+                    // must be qr check and if to state turn
+                    // but now turning to left
+                    motor_->go(135, 135);
                 }
             }
         }
         break;
 
         case LineLoopState::TURNING:
-        // Use IMU to track rotation
-        // Rotate until yaw changes by ±90°
-        // Then return to CORRIDOR_FOLLOWING
+            // Use IMU to track rotation
+            // Rotate until yaw changes by ±90°
+            // Then return to CORRIDOR_FOLLOWING
         {
+            //yaw_null_ = yaw_ref_;
             float current_yaw = imu_->getIntegratedResults();
             float yaw_error = yaw_ref_ - current_yaw;
+
             if (std::abs(yaw_error) < MAX_YAW_ERROR)
             {
                 state_ = LineLoopState::CORRIDOR_FOLLOWING;
@@ -273,21 +412,15 @@ void LineLoop::line_loop_timer_callback() {
             }
             else
             {
-
-                //float outputPid = 0.1 * yaw_error;
                 uint8_t l = 127 - (MAX_TURNING_MOTOR_SPEED * sgn(yaw_error));
                 uint8_t r = 127 + (MAX_TURNING_MOTOR_SPEED * sgn(yaw_error));
 
-                // uint8_t outL, outR;
-                // outL = std::clamp(l, MIN_MOTOR_SPEED, MAX_TURNING_MOTOR_SPEED);
-                // outR = std::clamp(r, MIN_MOTOR_SPEED, MAX_TURNING_MOTOR_SPEED);
-
                 motor_->go(l, r);
                 RCLCPP_INFO(this->get_logger(), "PID :: outL:%u outR:%u PID:%f", l, r);
-                //RCLCPP_INFO(this->get_logger(), "PID :: outL:%u outR:%u PID:%f", outL, outR, outputPid);
             }
         }
         break;
     }
+
     // END State machine
 }
