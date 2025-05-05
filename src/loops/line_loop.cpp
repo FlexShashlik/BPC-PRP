@@ -7,12 +7,13 @@
 #include <thread>
 
 #include "helper.hpp"
+#include "nodes/camera_node.hpp"
 #include "nodes/imu_node.hpp"
 #include "nodes/line_node.hpp"
 #include "nodes/motor_node.hpp"
 
-LineLoop::LineLoop (std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::LidarNode> lidar, std::shared_ptr<nodes::LineNode> line_sensors, std::shared_ptr<nodes::MotorNode> motor) : Node(
-    "lineLoopNode"), pid_(20, 0, 5), last_time_(this->now()) {
+LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::LidarNode> lidar, std::shared_ptr<nodes::LineNode> line_sensors, std::shared_ptr<nodes::MotorNode> motor) : Node(
+    "lineLoopNode"), pid_(12, 5.3, 9.8), last_time_(this->now()) {
     this->get_logger().set_level(rclcpp::Logger::Level::Info);
     // Create a timer
     timer_ = this->create_wall_timer(
@@ -25,6 +26,7 @@ LineLoop::LineLoop (std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::
 
     front_limit_ = MIN_FRONT_DISTANCE;
     imu_ = imu;
+    camera_ = camera;
 
     isCalibrated_ = false;
 }
@@ -149,12 +151,24 @@ void LineLoop::line_loop_timer_callback() {
             results = lidar_->GetLidarFiltrResults();
             if (results.front == -1 || results.right == -1 || results.left == -1) {
                 RCLCPP_INFO(this->get_logger(), "Empty, continue..");
-                return;
+
+                if (results.left == -1) {
+                    RCLCPP_INFO(this->get_logger(), "Empty left, too close probably, substitute..");
+                    results.left = 0;
+                }
+
+                if (results.right == -1) {
+                    RCLCPP_INFO(this->get_logger(), "Empty right, too close probably, substitute..");
+                    results.right = 0;
+                }
+
+                if (results.front == -1)
+                    return;
             }
 
             if (results.front > MIN_FRONT_DISTANCE && results.right < MIN_OPEN_SIDE_DISTANCE && results.left < MIN_OPEN_SIDE_DISTANCE) {
                 // PID using LIDAR
-                float inputPid = results.right - results.left;
+                float inputPid = results.front_right - results.front_left;
                 float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
 
                 uint8_t l = MAX_MOTOR_SPEED + outputPid;
@@ -167,7 +181,55 @@ void LineLoop::line_loop_timer_callback() {
                 motor_->go(outL, outR);
                 // END PID using LIDAR
             }
-            else if (results.front > MIN_FRONT_DISTANCE) {
+            else if (!camera_->Arucos.empty() && (results.right >= MIN_OPEN_SIDE_DISTANCE || results.left >= MIN_OPEN_SIDE_DISTANCE)) {
+                auto currentTag = camera_->Arucos.back();
+                camera_->Arucos.pop_back();
+
+                switch (currentTag) {
+                    case ArucoType::TreasureStraight:
+                    case ArucoType::Straight:
+                    {
+                        if (results.front > MIN_FRONT_DISTANCE - WALL_DISTANCE)
+                        {
+                            motor_->go(132, 132);
+                        }
+                    }
+                    break;
+                    case ArucoType::TreasureLeft:
+                    case ArucoType::Left:
+                    {
+                        yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
+                        RCLCPP_INFO(this->get_logger(), "TURNING LEFT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                    }
+                    break;
+                    case ArucoType::TreasureRight:
+                    case ArucoType::Right:
+                    {
+                        yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
+                        RCLCPP_INFO(this->get_logger(), "TURNING RIGHT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                    }
+                    break;
+                    // case ArucoType::TreasureStraight:
+                    // {
+                    //
+                    // }
+                    // break;
+                    // case ArucoType::TreasureLeft:
+                    // {
+                    //
+                    // }
+                    // break;
+                    // case ArucoType::TreasureRight:
+                    // {
+                    //
+                    // }
+                    break;
+                    default:
+                        RCLCPP_ERROR(this->get_logger(), "UNKNOWN TAG!!!");
+                        break;
+                }
+            }
+            else if (results.front > MIN_FRONT_DISTANCE - WALL_DISTANCE) {
                 motor_->go(132, 132);
             }
             else

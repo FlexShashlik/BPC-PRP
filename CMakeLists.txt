@@ -38,6 +38,9 @@ set(SRC
         include/nodes/imu_node.hpp
         include/algorithms/planar_imu_integrator.hpp
         src/algorithms/planar_imu_integrator.cpp
+        src/nodes/camera_node.cpp
+        include/nodes/camera_node.hpp
+        include/algorithms/aruco_detector.hpp
 )
 
 set(AMENT_LIBS rclcpp std_msgs sensor_msgs cv_bridge image_transport)

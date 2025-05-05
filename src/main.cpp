@@ -4,6 +4,7 @@
 #include "nodes/line_node.hpp"
 #include "nodes/motor_node.hpp"
 #include "loops/line_loop.hpp"
+#include "nodes/camera_node.hpp"
 #include "nodes/imu_node.hpp"
 #include "nodes/lidar_node.hpp"
 
@@ -28,7 +29,10 @@ int main(int argc, char* argv[]) {
     auto imu = std::make_shared<nodes::ImuNode>();
     executor->add_node(imu);
 
-    auto line_loop = std::make_shared<LineLoop>(imu, lidar_node, line_sensors, motor);
+    auto camera = std::make_shared<nodes::CameraNode>();
+    executor->add_node(camera);
+
+    auto line_loop = std::make_shared<LineLoop>(camera, imu, lidar_node, line_sensors, motor);
     executor->add_node(line_loop);
 
     auto executor_thread = std::thread([& executor](){executor->spin();});

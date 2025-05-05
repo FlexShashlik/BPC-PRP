@@ -26,7 +26,8 @@ static const float LINE_SENSOR_MAX_CALIBRATED_BLACK = 200;
 static const int LINE_SENSORS_DEADZONE = 15;
 
 // In meters
-static const float MIN_FRONT_DISTANCE = 0.21f;
+static const float MIN_FRONT_DISTANCE = 0.65f;
+static const float WALL_DISTANCE = 0.4f;
 static const float MIN_OPEN_SIDE_DISTANCE = 0.35f;
 
 // In degrees
@@ -40,6 +41,16 @@ namespace Topic {
     const std::string line_sensors = "/bpc_prp_robot/line_sensors";
     const std::string lidar = "/bpc_prp_robot/lidar";
     const std::string imu = "/bpc_prp_robot/imu";
+    const std::string camera = "/bpc_prp_robot/camera/compressed";
+};
+
+enum ArucoType {
+    Straight = 0,
+    Left = 1,
+    Right = 2,
+    TreasureStraight = 10,
+    TreasureLeft = 11,
+    TreasureRight = 12,
 };
 
 namespace Frame {

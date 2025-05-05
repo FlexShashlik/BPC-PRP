@@ -7,7 +7,7 @@
 #include "helper.hpp"
 
 nodes::ImuNode::ImuNode() : Node("imuNode"), last_time_(this->now()) {
-    this->get_logger().set_level(rclcpp::Logger::Level::Info);
+    this->get_logger().set_level(rclcpp::Logger::Level::Warn);
     planar_integrator_ = algorithms::PlanarImuIntegrator();
     planar_integrator_.reset();
 

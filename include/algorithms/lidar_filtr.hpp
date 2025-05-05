@@ -64,10 +64,10 @@ namespace algorithms {
                     right.push_back(points[i]);
                 }
 
-                if (angle >= -M_PI/4-angle_range && angle < -M_PI/4+angle_range) {
-                    front_left.push_back(points[i]);
-                } else if (angle >= M_PI/4-angle_range && angle < M_PI/4+angle_range) {
+                if (angle > 3*M_PI/4 - angle_range && angle < 3*M_PI/4 + angle_range) {
                     front_right.push_back(points[i]);
+                } else if (angle > -3*M_PI/4 - angle_range && angle < -3*M_PI/4 + angle_range) {
+                    front_left.push_back(points[i]);
                 }
             }
 

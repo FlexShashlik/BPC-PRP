@@ -8,7 +8,7 @@
 
 namespace nodes {
     MotorNode::MotorNode() : Node("motorNode"), last_time_(this->now()) {
-        this->get_logger().set_level(rclcpp::Logger::Level::Info);
+        this->get_logger().set_level(rclcpp::Logger::Level::Warn);
 
         motor_subscriber_ = this->create_subscription<std_msgs::msg::UInt32MultiArray>(
              Topic::encoders, 1, std::bind(&MotorNode::on_motor_callback, this, std::placeholders::_1));
