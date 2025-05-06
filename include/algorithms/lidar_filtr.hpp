@@ -40,7 +40,7 @@ namespace algorithms {
 
             // TODO: Define how wide each directional sector should be (in radians)
             constexpr float front_angle_range = deg2rad(5);
-            constexpr float angle_range = deg2rad(15);
+            constexpr float angle_range = deg2rad(5);
 
             // Compute the angular step between each range reading
             auto angle_step = (angle_end - angle_start) / points.size();

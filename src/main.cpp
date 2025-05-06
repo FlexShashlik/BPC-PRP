@@ -43,6 +43,9 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
+        // TODO: delete after test!
+        motor->start();
+
         switch (io->get_button_pressed()) {
             case 0:
             {
