@@ -20,7 +20,7 @@ nodes::CameraNode::CameraNode() : Node("camera")
 }
 
 // Get next move with prioritizing Treasure path
-ArucoType nodes::CameraNode::GetNextMove()
+ArucoType nodes::CameraNode::GetNextMove() const
 {
     if (arucos_.empty())
     {
@@ -33,8 +33,6 @@ ArucoType nodes::CameraNode::GetNextMove()
             isTreasureDetected_ && *it >= ArucoType::TreasureStraight)
         {
             const ArucoType found = *it;
-            arucos_.clear();
-            //arucos_.erase(it);
             return found;
         }
     }
@@ -57,6 +55,9 @@ void nodes::CameraNode::on_camera_msg(std::shared_ptr<sensor_msgs::msg::Compress
     }
 
     auto arucos = aruco_detector_.detect(image);
+    // Storing only last 2 arucos, because only 2 max can be in a square
+    if (!arucos.empty() && arucos_.size() > 2)
+        arucos_.clear();
 
     for (const auto &aruco: arucos)
     {

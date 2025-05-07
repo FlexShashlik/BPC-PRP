@@ -17,7 +17,7 @@ namespace nodes {
 
         ~CameraNode() override = default;
 
-        ArucoType GetNextMove();
+        ArucoType GetNextMove() const;
 
     private:
 
