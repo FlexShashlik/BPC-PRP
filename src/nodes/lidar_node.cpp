@@ -8,6 +8,7 @@
 #include "algorithms/lidar_filtr.hpp"
 
 nodes::LidarNode::LidarNode() : Node("lidarNode") {
+    this->get_logger().set_level(rclcpp::Logger::Level::Warn);
     lidar_subscriber_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
          Topic::lidar, 1, std::bind(&LidarNode::on_lidar_msg, this, std::placeholders::_1));
 }

@@ -39,14 +39,14 @@ namespace algorithms {
             cv::aruco::detectMarkers(frame, dictionary_, marker_corners, marker_ids);
 
             if (!marker_ids.empty()) {
-                std::cout << "Arucos found: ";
+                //std::cout << "Arucos found: ";
                 for (size_t i = 0; i < marker_ids.size(); i++) {
-                    std::cout << marker_ids[i] << " ";
+                    //std::cout << marker_ids[i] << " ";
 
                     // Create Aruco struct and add to result vector
                     arucos.emplace_back(marker_ids[i], marker_corners[i]);
                 }
-                std::cout << std::endl;
+                //std::cout << std::endl;
             }
 
             return arucos;

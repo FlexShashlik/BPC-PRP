@@ -18,7 +18,7 @@ static const double LOOP_POLLING_RATE_MS = 10;
 static const double ENCODER_POLLING_RATE_MS = 1;
 
 static const uint8_t MIN_MOTOR_SPEED = 127;
-static const uint8_t MAX_MOTOR_SPEED = 140;
+static const uint8_t MAX_MOTOR_SPEED = 142;
 static const uint8_t MAX_TURNING_MOTOR_SPEED = 5;
 
 
@@ -26,7 +26,7 @@ static const float LINE_SENSOR_MAX_CALIBRATED_BLACK = 200;
 static const int LINE_SENSORS_DEADZONE = 15;
 
 // In meters
-static const float MIN_FRONT_DISTANCE = 0.62f;
+static const float MIN_FRONT_DISTANCE = 0.75f;
 static const float WALL_DISTANCE = 0.25f;
 static const float MIN_OPEN_SIDE_DISTANCE = 0.4f;
 
@@ -45,6 +45,7 @@ namespace Topic {
 };
 
 enum ArucoType {
+    None = -1,
     Straight = 0,
     Left = 1,
     Right = 2,
@@ -62,7 +63,7 @@ namespace Frame {
 inline float mean(const std::vector<float>& vec) {
     if (vec.empty()) {
         // Handle empty vector case (avoid division by zero)
-        std::cerr << "Vector is empty, cannot calculate mean." << std::endl;
+        //std::cerr << "Vector is empty, cannot calculate mean." << std::endl;
         return -1.0f;  // or some other error value
     }
 

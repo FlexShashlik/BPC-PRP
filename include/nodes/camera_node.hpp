@@ -17,7 +17,8 @@ namespace nodes {
 
         ~CameraNode() override = default;
 
-        std::vector<ArucoType> Arucos;
+        ArucoType GetNextMove();
+
     private:
 
         rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr camera_subscriber_;
@@ -25,6 +26,9 @@ namespace nodes {
         void on_camera_msg(std::shared_ptr<sensor_msgs::msg::CompressedImage> msg);
 
         algorithms::ArucoDetector aruco_detector_;
+        std::vector<ArucoType> arucos_;
+
+        bool isTreasureDetected_;
     };
 }
 

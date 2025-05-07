@@ -35,6 +35,8 @@ public:
 private:
     algorithms::Pid pid_;
     void line_loop_timer_callback();
+    ArucoType getNextMove();
+    bool doTurn(ArucoType nextMove);
 
     std::shared_ptr<nodes::LineNode> line_sensors_;
     std::shared_ptr<nodes::LidarNode> lidar_;
@@ -56,6 +58,9 @@ private:
     bool isCalibrated_;
 
     LineLoopState state_;
+
+    // Do not use directly, use getNextMove() instead
+    ArucoType nextMove_;
 };
 
 

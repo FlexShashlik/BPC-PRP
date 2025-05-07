@@ -29,6 +29,8 @@ LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<n
     camera_ = camera;
 
     isCalibrated_ = false;
+
+    nextMove_ = ArucoType::None;
 }
 
 void LineLoop::Restart() {
@@ -247,7 +249,6 @@ void LineLoop::line_loop_timer_callback() {
                     return;
             }
 
-
             if (results.front > WALL_DISTANCE)
             {
                 if (results.front_right < MIN_OPEN_SIDE_DISTANCE && results.front_left < MIN_OPEN_SIDE_DISTANCE)
@@ -266,40 +267,53 @@ void LineLoop::line_loop_timer_callback() {
                 }
                 else if (results.front_right > MIN_OPEN_SIDE_DISTANCE && results.front_left < MIN_OPEN_SIDE_DISTANCE)
                 {
-                    float inputPid = 0.22f - results.front_left;
-                    float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
+                    if (results.front < MIN_FRONT_DISTANCE || !doTurn(getNextMove()))
+                    {
+                        float inputPid = 0.22f - results.front_left;
+                        float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
 
-                    uint8_t l = MAX_MOTOR_SPEED + outputPid;
-                    uint8_t r = MAX_MOTOR_SPEED - outputPid;
+                        uint8_t l = MAX_MOTOR_SPEED + outputPid;
+                        uint8_t r = MAX_MOTOR_SPEED - outputPid;
 
-                    uint8_t outL, outR;
-                    outL = std::clamp(l, (uint8_t)120, MAX_MOTOR_SPEED);
-                    outR = std::clamp(r, (uint8_t)120, MAX_MOTOR_SPEED);
+                        uint8_t outL, outR;
+                        outL = std::clamp(l, (uint8_t)120, MAX_MOTOR_SPEED);
+                        outR = std::clamp(r, (uint8_t)120, MAX_MOTOR_SPEED);
 
-                    motor_->go(outL, outR);
+                        motor_->go(outL, outR);
+                    }
                 }
                 else if (results.front_right < MIN_OPEN_SIDE_DISTANCE && results.front_left > MIN_OPEN_SIDE_DISTANCE)
                 {
-                    float inputPid = results.front_right - 0.22f;
-                    float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
+                    if (results.front < MIN_FRONT_DISTANCE || !doTurn(getNextMove()))
+                    {
+                        float inputPid = results.front_right - 0.22f;
+                        float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
 
-                    uint8_t l = MAX_MOTOR_SPEED + outputPid;
-                    uint8_t r = MAX_MOTOR_SPEED - outputPid;
+                        uint8_t l = MAX_MOTOR_SPEED + outputPid;
+                        uint8_t r = MAX_MOTOR_SPEED - outputPid;
 
-                    uint8_t outL, outR;
-                    outL = std::clamp(l, (uint8_t)120, MAX_MOTOR_SPEED);
-                    outR = std::clamp(r, (uint8_t)120, MAX_MOTOR_SPEED);
+                        uint8_t outL, outR;
+                        outL = std::clamp(l, (uint8_t)120, MAX_MOTOR_SPEED);
+                        outR = std::clamp(r, (uint8_t)120, MAX_MOTOR_SPEED);
 
-                    motor_->go(outL, outR);
+                        motor_->go(outL, outR);
+                    }
                 }
                 else
                 {
                     // X-section
-                    motor_->go(135, 135);
+                    // If less than min distance to be a real X-section (can be just going to T-section)
+                    if (results.front < MIN_FRONT_DISTANCE || !doTurn(getNextMove()))
+                    {
+                        motor_->go(135, 135);
+                    }
                 }
             }
             else // Closed turns (no way forward)
             {
+                if (nextMove_ == ArucoType::Straight || nextMove_ == ArucoType::TreasureStraight)
+                    nextMove_ = ArucoType::None;
+
                 yaw_start_ = imu_->getIntegratedResults();
                 if (results.left < MIN_OPEN_SIDE_DISTANCE && results.right < MIN_OPEN_SIDE_DISTANCE)
                 {
@@ -307,26 +321,31 @@ void LineLoop::line_loop_timer_callback() {
                     // turning 180
                     yaw_ref_ = yaw_start_ + 180;
                     state_ = LineLoopState::TURNING;
-                    RCLCPP_INFO(this->get_logger(), "TURNING 180 from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                    RCLCPP_WARN(this->get_logger(), "TURNING 180 from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
                 }
                 else if (results.left > MIN_OPEN_SIDE_DISTANCE && results.right < MIN_OPEN_SIDE_DISTANCE)
                 {
                     // turning to right
                     yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
                     state_ = LineLoopState::TURNING;
-                    RCLCPP_INFO(this->get_logger(), "TURNING RIGHT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                    RCLCPP_WARN(this->get_logger(), "TURNING RIGHT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
                 }
                 else if (results.right > MIN_OPEN_SIDE_DISTANCE && results.left < MIN_OPEN_SIDE_DISTANCE)
                 {
                     // turning to left
                     yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
                     state_ = LineLoopState::TURNING;
-                    RCLCPP_INFO(this->get_logger(), "TURNING LEFT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                    RCLCPP_WARN(this->get_logger(), "TURNING LEFT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
                 }
                 else
                 {
                     // T-turn
-                    // TODO:
+                    if (!doTurn(getNextMove()))
+                    {
+                        RCLCPP_ERROR(this->get_logger(), "Can't go straight in a T-turn!");
+                        motor_->go(127, 127);
+                        motor_->stop();
+                    }
                 }
             }
         }
@@ -344,6 +363,9 @@ void LineLoop::line_loop_timer_callback() {
             {
                 state_ = LineLoopState::CORRIDOR_FOLLOWING;
                 RCLCPP_WARN(this->get_logger(), "State CORRIDOR FOLLOWING yaw_start: %.2f°, yaw_ref: %.2f°, current_yaw: %.2f°", yaw_start_, yaw_ref_, current_yaw);
+
+                if (nextMove_ == Right || nextMove_ == Left || nextMove_ == TreasureRight || nextMove_ == TreasureLeft)
+                    nextMove_ = None;
             }
             else
             {
@@ -358,4 +380,51 @@ void LineLoop::line_loop_timer_callback() {
     }
 
     // END State machine
+}
+
+ArucoType LineLoop::getNextMove()
+{
+    if (nextMove_ != ArucoType::None)
+        return nextMove_;
+
+    nextMove_ = camera_->GetNextMove();
+    RCLCPP_WARN(this->get_logger(), "Next move: %i", (int)nextMove_);
+    return nextMove_;
+}
+
+bool LineLoop::doTurn(const ArucoType nextMove)
+{
+    switch (nextMove)
+    {
+        yaw_start_ = imu_->getIntegratedResults();
+
+        case ArucoType::TreasureLeft:
+        case ArucoType::Left:
+        {
+            yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
+            RCLCPP_WARN(this->get_logger(), "doTurn LEFT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+            state_ = LineLoopState::TURNING;
+            return true;
+        }
+        break;
+
+        case ArucoType::TreasureRight:
+        case ArucoType::Right:
+        {
+            yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
+            RCLCPP_WARN(this->get_logger(), "doTurn RIGHT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+            state_ = LineLoopState::TURNING;
+            return true;
+        }
+        break;
+
+        default:
+        case ArucoType::TreasureStraight:
+        case ArucoType::Straight:
+        {
+            RCLCPP_WARN(this->get_logger(), "doTurn Straight");
+            return false;
+        }
+        break;
+    }
 }
