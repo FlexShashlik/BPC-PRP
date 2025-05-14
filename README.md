@@ -1,4 +1,44 @@
 # README
+# 🧠 Robot Navigation System (ROS 2 Based)
+
+This project implements a modular robotic system built on the **ROS 2 (Robot Operating System 2)** framework, providing a scalable and distributed architecture for autonomous navigation tasks. Using the **publisher–subscriber communication model**, ROS 2 enables real-time data exchange between loosely coupled components (nodes), each responsible for a specific functionality.
+
+## 🧩 System Architecture Overview
+
+The system is composed of several dedicated ROS 2 nodes:
+
+- **Lidar Node** – Collects and preprocesses data from a 2D LiDAR sensor for environmental awareness.
+- **Camera Node** – Handles camera communication and image acquisition, including Aruco marker detection using OpenCV.
+- **IO Node** – Manages digital I/O such as button states and LED control.
+- **IMU Node** – Processes data from the inertial measurement unit (IMU) to estimate orientation and movement.
+- **Line Loop Node** – Acts as the main control loop, coordinating sensor inputs and controlling robot behavior.
+
+## 🔧 Algorithms Module
+
+Additional algorithms are located in the `algorithms/` directory:
+
+- `aruco_detector.hpp` – Implements Aruco tag detection logic.
+- `lidar_filtr.hpp` – Filters and processes LiDAR data.
+- `pid.hpp` – General-purpose PID controller for motion control and stability.
+- `planar_imu_integrator.hpp` – Integrates IMU data for pose estimation.
+
+## ⚙️ Utilities
+
+A utility header `helper.hpp` contains frequently used constants and helper functions:
+
+- Physical robot parameters (e.g., wheel radius, encoder resolution)
+- Sensor thresholds and motor limits
+- Aruco marker IDs and ROS 2 topic definitions
+- Math helpers: `mean`, `deg2rad`, `rad2deg`, `sgn`
+
+This modular architecture ensures:
+
+- **Scalability** – Easily extendable with new components
+- **Reusability** – Hardware-agnostic algorithms
+- **Maintainability** – Decoupled modules allow targeted debugging
+- **Parallel Development** – Team members can work on separate features
+- **Robustness** – Isolated nodes reduce risk of system-wide failure
+
 ## To build, run in terminal:
     source /opt/ros/humble/setup.bash
     clion
