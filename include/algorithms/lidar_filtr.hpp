@@ -39,7 +39,7 @@ namespace algorithms {
             std::vector<float> front_left{};
 
             // TODO: Define how wide each directional sector should be (in radians)
-            constexpr float front_angle_range = deg2rad(5);
+            constexpr float front_angle_range = deg2rad(10);
             constexpr float angle_range = deg2rad(5);
 
             // Compute the angular step between each range reading
@@ -54,7 +54,7 @@ namespace algorithms {
                 }
 
                 // TODO: Sort the value into the correct directional bin based on angle
-                if (angle >= M_PI-front_angle_range || angle < -M_PI+front_angle_range) {
+                if ((M_PI >angle && angle >= M_PI-front_angle_range) || (-M_PI < angle && angle < -M_PI+front_angle_range)) {
                     front.push_back(points[i]);
                 } else if (angle >= -M_PI/2-angle_range && angle < -M_PI/2+angle_range) {
                     left.push_back(points[i]);

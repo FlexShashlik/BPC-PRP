@@ -19,7 +19,8 @@ namespace nodes {
 enum class LineLoopState {
     CALIBRATION,
     CORRIDOR_FOLLOWING,
-    TURNING
+    TURNING,
+    AFTER_TURNING,
 };
 
 class LineLoop : public rclcpp::Node {

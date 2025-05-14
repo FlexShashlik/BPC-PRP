@@ -18,7 +18,7 @@ static const double LOOP_POLLING_RATE_MS = 10;
 static const double ENCODER_POLLING_RATE_MS = 1;
 
 static const uint8_t MIN_MOTOR_SPEED = 127;
-static const uint8_t MAX_MOTOR_SPEED = 142;
+static const uint8_t MAX_MOTOR_SPEED = 138;
 static const uint8_t MAX_TURNING_MOTOR_SPEED = 5;
 
 
@@ -29,6 +29,7 @@ static const int LINE_SENSORS_DEADZONE = 15;
 static const float MIN_FRONT_DISTANCE = 0.75f;
 static const float WALL_DISTANCE = 0.25f;
 static const float MIN_OPEN_SIDE_DISTANCE = 0.4f;
+static const float DELTA_TO_TURN = 0.14f;
 
 // In degrees
 static const float MAX_YAW_ERROR = 7.f;
