@@ -14,11 +14,6 @@ namespace nodes {
              Topic::encoders, 1, std::bind(&MotorNode::on_motor_callback, this, std::placeholders::_1));
         motor_publisher_ = this->create_publisher<std_msgs::msg::UInt8MultiArray>(Topic::set_motor_speeds, 1);
 
-        // Create a timer
-        timer_ = this->create_wall_timer(
-            std::chrono::milliseconds(static_cast<int>(ENCODER_POLLING_RATE_MS)),
-            std::bind(&MotorNode::timer_callback, this));
-
         motor_message = std_msgs::msg::UInt8MultiArray();
         motor_message.layout.dim.resize(1);
         motor_message.layout.dim[0].label = "SPEEDs";
@@ -51,48 +46,6 @@ namespace nodes {
     void MotorNode::stop() {
         isStopped_ = true;
     }
-
-    void MotorNode::timer_callback() {
-        RCLCPP_DEBUG(this->get_logger(), "Timer triggered. Publishing uptime...");
-
-        auto dLeft = encoder_left_ - encoder_left_last_;
-        auto dRight = encoder_right_last_ - encoder_right_; // because of encoder's overflow
-        auto dTime = (this->now() - last_time_).seconds();
-
-        RCLCPP_DEBUG(this->get_logger(), "dTime: %f", dTime);
-
-        // Angular velocity in ticks/dT
-        wLeft = (dLeft / dTime);
-        wRight = (dRight / dTime);
-
-        // Convert ang velocity to rotations per second
-        wLeft *= 1./TICKS_PER_ROTATION;
-        wRight *= 1./TICKS_PER_ROTATION;
-
-        RCLCPP_DEBUG(this->get_logger(), "Left RPS: %f", wLeft);
-        RCLCPP_DEBUG(this->get_logger(), "Right RPS: %f", wRight);
-
-        double vL = kinematics::calc_wheel_speed(wLeft);
-        double vR = kinematics::calc_wheel_speed(wRight);
-        RCLCPP_DEBUG(this->get_logger(), "Left speed %f m/s", vL);
-        RCLCPP_DEBUG(this->get_logger(), "Right speed %f m/s", vR);
-
-        double dV = kinematics::calc_delta_speed(vL, vR);
-        RCLCPP_DEBUG(this->get_logger(), "Delta speed %f m/s", dV);
-
-        double dAngle = kinematics::calc_delta_angle(vL, vR);
-        RCLCPP_DEBUG(this->get_logger(), "Delta angle: %f", dAngle);
-
-        kinematics::calc_pos(dV, dAngle);
-        RCLCPP_DEBUG(this->get_logger(), "X: %f", kinematics::xPos);
-        RCLCPP_DEBUG(this->get_logger(), "Y: %f", kinematics::yPos);
-        RCLCPP_DEBUG(this->get_logger(), "Angle: %f", kinematics::anglePos);
-
-        encoder_left_last_ = encoder_left_;
-        encoder_right_last_ = encoder_right_;
-        last_time_ = this->now();
-    }
-
 
     double MotorNode::get_left_angular_velocity() const {
         return wLeft;

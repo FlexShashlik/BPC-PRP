@@ -39,9 +39,17 @@ This modular architecture ensures:
 - **Parallel Development** – Team members can work on separate features
 - **Robustness** – Isolated nodes reduce risk of system-wide failure
 
-## To build, run in terminal:
-    source /opt/ros/humble/setup.bash
-    clion
+## To run from terminal
+```bash
+source setup.bash
+ros2 run prp_project prp_project
+```
+
+## To build in clion, run in terminal:
+```bash
+source /opt/ros/humble/setup.bash
+clion
+```
 
 ## To connect to robot, ensure that the DOMAIN_ID is correct:
     > student@sd151-student-05:~$ env | grep ROS

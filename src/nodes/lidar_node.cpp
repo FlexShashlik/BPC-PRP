@@ -21,7 +21,7 @@ void nodes::LidarNode::on_lidar_msg(const sensor_msgs::msg::LaserScan::SharedPtr
     if (msg) {
         filtr_results_ = algorithms::LidarFiltr::apply_filter(msg->ranges, msg->angle_min, msg->angle_max);
 
-        RCLCPP_WARN(this->get_logger(), "LIDAR :: F:%f B:%f L:%f R:%f FL:%f FR: %f", filtr_results_.front, filtr_results_.back, filtr_results_.left, filtr_results_.right, filtr_results_.front_left, filtr_results_.front_right);
+        RCLCPP_INFO(this->get_logger(), "LIDAR :: F:%f B:%f L:%f R:%f FL:%f FR: %f", filtr_results_.front, filtr_results_.back, filtr_results_.left, filtr_results_.right, filtr_results_.front_left, filtr_results_.front_right);
     } else {
         RCLCPP_WARN(this->get_logger(), "Received empty LaserScan message.");
     }

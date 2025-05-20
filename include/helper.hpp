@@ -110,5 +110,11 @@ template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
+inline uint8_t convert_speed_to_command(float wheel_speed)
+{
+    int command = 127 + static_cast<int>(std::round(10 * wheel_speed));
+    command = std::min(255, std::max(0, command));
+    return static_cast<uint8_t>(command);
+}
 
 #endif //HELPER_HPP

@@ -34,8 +34,6 @@ int main(int argc, char* argv[]) {
     auto executor_thread = std::thread([& executor](){executor->spin();});
     while (rclcpp::ok())
     {
-        motor->start();
-        motor->go(140,140);
         if (imu->getMode() == nodes::ImuNodeMode::CALIBRATE)
         {
             continue;
