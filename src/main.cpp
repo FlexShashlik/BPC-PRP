@@ -1,7 +1,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include "SineWave.hpp"
 #include "nodes/io_node.hpp"
-#include "nodes/line_node.hpp"
 #include "nodes/motor_node.hpp"
 #include "loops/line_loop.hpp"
 #include "nodes/camera_node.hpp"
@@ -20,9 +19,6 @@ int main(int argc, char* argv[]) {
     auto motor = std::make_shared<nodes::MotorNode>();
     executor->add_node(motor);
 
-    auto line_sensors = std::make_shared<nodes::LineNode>();
-    executor->add_node(line_sensors);
-
     auto lidar_node = std::make_shared<nodes::LidarNode>();
     executor->add_node(lidar_node);
 
@@ -32,12 +28,14 @@ int main(int argc, char* argv[]) {
     auto camera = std::make_shared<nodes::CameraNode>();
     executor->add_node(camera);
 
-    auto line_loop = std::make_shared<LineLoop>(camera, imu, lidar_node, line_sensors, motor);
+    auto line_loop = std::make_shared<LineLoop>(camera, imu, lidar_node, motor);
     executor->add_node(line_loop);
 
     auto executor_thread = std::thread([& executor](){executor->spin();});
     while (rclcpp::ok())
     {
+        motor->start();
+        motor->go(140,140);
         if (imu->getMode() == nodes::ImuNodeMode::CALIBRATE)
         {
             continue;
@@ -53,8 +51,6 @@ int main(int argc, char* argv[]) {
             {
                 motor->start();
                 line_loop->Restart();
-                //imu->reset_imu();
-                // isCalibrated = false;
             }
             break;
             default:

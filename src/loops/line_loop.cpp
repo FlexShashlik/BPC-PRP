@@ -9,11 +9,10 @@
 #include "helper.hpp"
 #include "nodes/camera_node.hpp"
 #include "nodes/imu_node.hpp"
-#include "nodes/line_node.hpp"
 #include "nodes/motor_node.hpp"
 
-LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::LidarNode> lidar, std::shared_ptr<nodes::LineNode> line_sensors, std::shared_ptr<nodes::MotorNode> motor) : Node(
-    "lineLoopNode"), pid_(12, 0, 1), last_time_(this->now()) {
+LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::LidarNode> lidar, std::shared_ptr<nodes::MotorNode> motor) : Node(
+    "lineLoopNode"), pid_(30, 10, 0), last_time_(this->now()) {
     this->get_logger().set_level(rclcpp::Logger::Level::Warn);
     // Create a timer
     timer_ = this->create_wall_timer(
@@ -21,7 +20,6 @@ LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<n
         std::bind(&LineLoop::line_loop_timer_callback, this));
 
     lidar_ = lidar;
-    line_sensors_ = line_sensors;
     motor_ = motor;
 
     front_limit_ = MIN_FRONT_DISTANCE;
@@ -102,15 +100,15 @@ void LineLoop::line_loop_timer_callback() {
             {
                 if (results.right < MIN_OPEN_SIDE_DISTANCE && results.left < MIN_OPEN_SIDE_DISTANCE)
                 {
-                    float inputPid = 0.22f - results.left;
+                    float inputPid = results.right - 0.19;
                     float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
 
                     uint8_t l = MAX_MOTOR_SPEED + outputPid;
                     uint8_t r = MAX_MOTOR_SPEED - outputPid;
 
                     uint8_t outL, outR;
-                    outL = std::clamp(l, (uint8_t)120, MAX_MOTOR_SPEED);
-                    outR = std::clamp(r, (uint8_t)120, MAX_MOTOR_SPEED);
+                    outL = std::clamp(l, (uint8_t)127, uint8_t(MAX_MOTOR_SPEED + 10));
+                    outR = std::clamp(r, (uint8_t)127, uint8_t(MAX_MOTOR_SPEED + 10));
 
                     motor_->go(outL, outR);
                 }
@@ -238,7 +236,7 @@ void LineLoop::line_loop_timer_callback() {
             }
             else if (results.right > MIN_OPEN_SIDE_DISTANCE && results.left < MIN_OPEN_SIDE_DISTANCE)
             {
-                float inputPid = 0.22f - results.left;
+                float inputPid = 0.22 - results.left;
                 float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
 
                 uint8_t l = MAX_MOTOR_SPEED + outputPid;

@@ -41,6 +41,7 @@ namespace algorithms {
             // TODO: Define how wide each directional sector should be (in radians)
             constexpr float front_angle_range = deg2rad(10);
             constexpr float angle_range = deg2rad(5);
+            constexpr float side_angle_range = deg2rad(70);
 
             // Compute the angular step between each range reading
             auto angle_step = (angle_end - angle_start) / points.size();
@@ -56,11 +57,11 @@ namespace algorithms {
                 // TODO: Sort the value into the correct directional bin based on angle
                 if ((M_PI >angle && angle >= M_PI-front_angle_range) || (-M_PI < angle && angle < -M_PI+front_angle_range)) {
                     front.push_back(points[i]);
-                } else if (angle >= -M_PI/2-angle_range && angle < -M_PI/2+angle_range) {
+                } else if (angle >= -M_PI/2-side_angle_range && angle < -M_PI/2+side_angle_range) {
                     left.push_back(points[i]);
                 } else if (angle >= -angle_range && angle < angle_range) {
                     back.push_back(points[i]);
-                } else if (angle >= M_PI/2-angle_range && angle < M_PI/2+angle_range) {
+                } else if (angle >= M_PI/2-side_angle_range && angle < M_PI/2+side_angle_range) {
                     right.push_back(points[i]);
                 }
 
@@ -75,8 +76,8 @@ namespace algorithms {
             return LidarFiltrResults{
                 .front = mean(front),
                 .back = mean(back),
-                .left = mean(left),
-                .right = mean(right),
+                .left = min_mean(left),
+                .right = min_mean(right),
                 .front_right = mean(front_right),
                 .front_left = mean(front_left),
             };

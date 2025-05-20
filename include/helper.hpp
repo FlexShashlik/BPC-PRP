@@ -9,6 +9,7 @@
 #include <iostream>
 #include <vector>
 #include <numeric>
+#include <algorithm>
 
 static const int MAIN_LOOP_PERIOD_MS = 50;
 static const int TICKS_PER_ROTATION = 576;
@@ -18,7 +19,7 @@ static const double LOOP_POLLING_RATE_MS = 10;
 static const double ENCODER_POLLING_RATE_MS = 1;
 
 static const uint8_t MIN_MOTOR_SPEED = 127;
-static const uint8_t MAX_MOTOR_SPEED = 138;
+static const uint8_t MAX_MOTOR_SPEED = 137;
 static const uint8_t MAX_TURNING_MOTOR_SPEED = 5;
 
 
@@ -74,6 +75,27 @@ inline float mean(const std::vector<float>& vec) {
     // Calculate mean
     float mean = sum / vec.size();
     return mean;
+}
+
+// Select 5-min values and calc their mean
+inline float min_mean(std::vector<float>& vec)
+{
+    if (vec.empty()) {
+        // Handle empty vector case (avoid division by zero)
+        //std::cerr << "Vector is empty, cannot calculate mean." << std::endl;
+        return -1.0f;  // or some other error value
+    }
+
+    // clamp the size
+    size_t clampedCount = std::min(vec.size(), size_t(5));
+    std::partial_sort(vec.begin(), vec.begin() + clampedCount, vec.end());
+
+    // Create a new vector with the first 5 (smallest) values
+    std::vector<float> fiveMinValues(vec.begin(), vec.begin() + clampedCount);
+
+    // Pass to mean() function
+    float avg = mean(fiveMinValues);
+    return avg;
 }
 
 constexpr double deg2rad(const double deg) {

@@ -24,8 +24,6 @@ set(SRC
         include/nodes/motor_node.hpp
         src/kinematics.cpp
         include/kinematics.hpp
-        src/nodes/line_node.cpp
-        include/nodes/line_node.hpp
         src/loops/line_loop.cpp
         include/loops/line_loop.hpp
         src/algorithms/pid.cpp

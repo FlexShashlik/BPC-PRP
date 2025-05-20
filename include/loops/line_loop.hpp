@@ -8,7 +8,6 @@
 
 #include "algorithms/pid.hpp"
 #include "nodes/camera_node.hpp"
-#include "nodes/line_node.hpp"
 #include "nodes/motor_node.hpp"
 #include "nodes/lidar_node.hpp"
 
@@ -26,7 +25,7 @@ enum class LineLoopState {
 class LineLoop : public rclcpp::Node {
 public:
     // Constructor
-    LineLoop(std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::LidarNode> lidar, std::shared_ptr<nodes::LineNode> line_sensors, std::shared_ptr<nodes::MotorNode> motor);
+    LineLoop(std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::LidarNode> lidar, std::shared_ptr<nodes::MotorNode> motor);
     // Destructor (default)
     ~LineLoop() override = default;
     void Restart();
@@ -39,7 +38,6 @@ private:
     ArucoType getNextMove();
     bool doTurn(ArucoType nextMove);
 
-    std::shared_ptr<nodes::LineNode> line_sensors_;
     std::shared_ptr<nodes::LidarNode> lidar_;
     std::shared_ptr<nodes::MotorNode> motor_;
     std::shared_ptr<nodes::ImuNode> imu_;
