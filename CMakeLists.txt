@@ -22,7 +22,6 @@ set(SRC
         include/helper.hpp
         src/nodes/motor_node.cpp
         include/nodes/motor_node.hpp
-        src/kinematics.cpp
         include/kinematics.hpp
         src/loops/line_loop.cpp
         include/loops/line_loop.hpp

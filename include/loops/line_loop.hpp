@@ -6,6 +6,7 @@
 #define LINE_LOOP_HPP
 #include <memory>
 
+#include "kinematics.hpp"
 #include "algorithms/pid.hpp"
 #include "nodes/camera_node.hpp"
 #include "nodes/motor_node.hpp"
@@ -31,6 +32,8 @@ public:
     void Restart();
 
     LineLoopState getState() const;
+
+    float calculate_pid_angular_velocity(float left_dist, float right_dist);
 
 private:
     algorithms::Pid pid_;
@@ -60,6 +63,13 @@ private:
 
     // Do not use directly, use getNextMove() instead
     ArucoType nextMove_;
+
+    float integral_;
+    float previous_error_;
+    float kp_, ki_, kd_;
+
+    float base_linear_velocity_;
+    algorithms::Kinematics kinematics_;
 };
 
 

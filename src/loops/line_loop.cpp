@@ -7,12 +7,13 @@
 #include <thread>
 
 #include "helper.hpp"
+#include "kinematics.hpp"
 #include "nodes/camera_node.hpp"
 #include "nodes/imu_node.hpp"
 #include "nodes/motor_node.hpp"
 
 LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::LidarNode> lidar, std::shared_ptr<nodes::MotorNode> motor) : Node(
-    "lineLoopNode"), pid_(30, 10, 0), last_time_(this->now()) {
+        "lineLoopNode"), pid_(4.8, 10, 40), last_time_(this->now()), kinematics_(0.033, 0.16, 360) {
     this->get_logger().set_level(rclcpp::Logger::Level::Warn);
     // Create a timer
     timer_ = this->create_wall_timer(
@@ -29,6 +30,12 @@ LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<n
     isCalibrated_ = false;
 
     nextMove_ = ArucoType::None;
+
+    integral_ = 0;
+    previous_error_ = 0;
+    kp_ = 1.5f, ki_ = 0, kd_ = 0;
+
+    base_linear_velocity_ = 0.04f;
 }
 
 void LineLoop::Restart() {
@@ -38,6 +45,32 @@ void LineLoop::Restart() {
 
 LineLoopState LineLoop::getState() const {
     return state_;
+}
+
+float LineLoop::calculate_pid_angular_velocity(float left_dist, float right_dist)
+{
+    // Filter out small differences in raw measurements
+    float left = left_dist;
+    float right = right_dist;
+    const float distance_deadband = 0.02f; // 2cm deadband for raw distances
+
+    if (std::abs(left - right) < distance_deadband)
+    {
+        // If difference is smaller than deadband, consider them equal
+        left = (left + right) / 2.0f;
+        right = left;
+    }
+
+    float corridor_offset = left - right;
+
+    float error = corridor_offset;
+    integral_ += error * 0.02f;
+    float derivative = (error - previous_error_) / 0.02f;
+
+    float output = kp_ * error + ki_ * integral_ + kd_ * derivative;
+
+    previous_error_ = error;
+    return output;
 }
 
 void LineLoop::line_loop_timer_callback() {
@@ -100,17 +133,28 @@ void LineLoop::line_loop_timer_callback() {
             {
                 if (results.right < MIN_OPEN_SIDE_DISTANCE && results.left < MIN_OPEN_SIDE_DISTANCE)
                 {
-                    float inputPid = results.right - 0.19;
+                    float angular_velocity = calculate_pid_angular_velocity(results.left, results.right);
+                    float linear_velocity = base_linear_velocity_;
+
+                    algorithms::RobotSpeed robot_speed(linear_velocity, angular_velocity);
+                    algorithms::WheelSpeed wheel_speeds = kinematics_.inverse(robot_speed);
+
+                    motor_->go(convert_speed_to_command(wheel_speeds.l), convert_speed_to_command(wheel_speeds.r));
+/*
+                    float inputPid = results.right - results.left;
                     float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
 
                     uint8_t l = MAX_MOTOR_SPEED + outputPid;
                     uint8_t r = MAX_MOTOR_SPEED - outputPid;
 
                     uint8_t outL, outR;
-                    outL = std::clamp(l, (uint8_t)127, uint8_t(MAX_MOTOR_SPEED + 10));
-                    outR = std::clamp(r, (uint8_t)127, uint8_t(MAX_MOTOR_SPEED + 10));
+                    outL = std::clamp(l, uint8_t(MAX_MOTOR_SPEED - 5), uint8_t(MAX_MOTOR_SPEED + 5));
+                    outR = std::clamp(r, uint8_t(MAX_MOTOR_SPEED - 5), uint8_t(MAX_MOTOR_SPEED + 5));
 
                     motor_->go(outL, outR);
+
+                    RCLCPP_WARN(this->get_logger(), "PID :: inputPid:%f outL:%u outR:%u outPid:%f", inputPid, outL, outR, outputPid);
+                    */
                 }
                 else if (results.right > MIN_OPEN_SIDE_DISTANCE && results.left < MIN_OPEN_SIDE_DISTANCE)
                 {
@@ -119,8 +163,8 @@ void LineLoop::line_loop_timer_callback() {
                         float inputPid = 0.22f - results.left;
                         float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
 
-                        uint8_t l = MAX_MOTOR_SPEED + outputPid;
-                        uint8_t r = MAX_MOTOR_SPEED - outputPid;
+                        uint8_t l = MAX_MOTOR_SPEED + outputPid*10;
+                        uint8_t r = MAX_MOTOR_SPEED - outputPid*10;
 
                         uint8_t outL, outR;
                         outL = std::clamp(l, (uint8_t)120, MAX_MOTOR_SPEED);
@@ -291,7 +335,7 @@ void LineLoop::line_loop_timer_callback() {
                 uint8_t r = 127 + (MAX_TURNING_MOTOR_SPEED * sgn(yaw_error));
 
                 motor_->go(l, r);
-                RCLCPP_INFO(this->get_logger(), "PID :: outL:%u outR:%u PID:%f", l, r);
+                RCLCPP_INFO(this->get_logger(), "PID :: outL:%u outR:%u", l, r);
             }
         }
         break;

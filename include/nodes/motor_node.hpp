@@ -48,7 +48,6 @@ namespace nodes {
 
         // Callback - preprocess received message
         void on_motor_callback(const std_msgs::msg::UInt32MultiArray::SharedPtr msg);
-        void timer_callback();
 
         rclcpp::TimerBase::SharedPtr timer_;
 
