@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
     auto camera = std::make_shared<nodes::CameraNode>();
     executor->add_node(camera);
 
-    auto line_loop = std::make_shared<LineLoop>(camera, imu, lidar_node, motor);
+    auto line_loop = std::make_shared<LineLoop>(camera, imu, motor);
     executor->add_node(line_loop);
 
     auto executor_thread = std::thread([& executor](){executor->spin();});
