@@ -8,6 +8,8 @@
 
 #include "algorithms/lidar_filtr.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
+#include <std_msgs/msg/float32_multi_array.hpp>
+#include <std_msgs/msg/int8.hpp>
 
 namespace nodes {
     class LidarNode  : public rclcpp::Node {
@@ -16,11 +18,11 @@ namespace nodes {
 
         ~LidarNode() override = default;
 
-        algorithms::LidarFiltrResults GetLidarFiltrResults();
-
     private:
 
         rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_subscriber_;
+        rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr lidar_avg_publisher_;
+        rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr lidar_turn_publisher_;
 
         void on_lidar_msg(std::shared_ptr<sensor_msgs::msg::LaserScan> msg);
 

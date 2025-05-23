@@ -44,6 +44,8 @@ namespace Topic {
     const std::string lidar = "/bpc_prp_robot/lidar";
     const std::string imu = "/bpc_prp_robot/imu";
     const std::string camera = "/bpc_prp_robot/camera/compressed";
+    const std::string lidar_avg = "/lidar_avg";
+    const std::string detected_turn_type = "/detected_turn_type";
 };
 
 enum ArucoType {

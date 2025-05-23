@@ -26,7 +26,7 @@ enum class LineLoopState {
 class LineLoop : public rclcpp::Node {
 public:
     // Constructor
-    LineLoop(std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::LidarNode> lidar, std::shared_ptr<nodes::MotorNode> motor);
+    LineLoop(std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::MotorNode> motor);
     // Destructor (default)
     ~LineLoop() override = default;
     void Restart();
@@ -41,10 +41,14 @@ private:
     ArucoType getNextMove();
     bool doTurn(ArucoType nextMove);
 
-    std::shared_ptr<nodes::LidarNode> lidar_;
+    rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr lidar_subscriber_;
+    void on_lidar_msg(const std_msgs::msg::Float32MultiArray::SharedPtr msg);
+
     std::shared_ptr<nodes::MotorNode> motor_;
     std::shared_ptr<nodes::ImuNode> imu_;
     std::shared_ptr<nodes::CameraNode> camera_;
+
+    algorithms::LidarFiltrResults lidar_results_;
 
     double uptime_;
     rclcpp::TimerBase::SharedPtr timer_;
