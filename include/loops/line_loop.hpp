@@ -33,7 +33,17 @@ public:
 
     LineLoopState getState() const;
 
+    void TurnLeft();
+
+    void TurnRight();
+
+    void Turn180();
+
     float calculate_pid_angular_velocity(float left_dist, float right_dist);
+
+    float calculate_left_wall_pid_angular_velocity(float left_dist);
+
+    float calculate_right_wall_pid_angular_velocity(float right_dist);
 
 private:
     algorithms::Pid pid_;

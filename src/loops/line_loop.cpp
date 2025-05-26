@@ -12,8 +12,19 @@
 #include "nodes/imu_node.hpp"
 #include "nodes/motor_node.hpp"
 
+
+// Add a new turn stage enum
+enum class TurnStage {
+    INIT,
+    FORWARD_TO_EDGE,
+    ROTATE,
+    DONE
+};
+TurnStage turn_stage_ = TurnStage::INIT;
+float initial_front_ = 0.0f;
+
 LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::MotorNode> motor) : Node(
-        "lineLoopNode"), pid_(5, 0, 0), last_time_(this->now()), kinematics_(0.033, 0.16, 360) {
+        "lineLoopNode"), pid_(3, 0, 0), last_time_(this->now()), kinematics_(0.033, 0.16, 360) {
     this->get_logger().set_level(rclcpp::Logger::Level::Warn);
     // Create a timer
     /*timer_ = this->create_wall_timer(
@@ -36,7 +47,7 @@ LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<n
 
     integral_ = 0;
     previous_error_ = 0;
-    kp_ = 1.5f, ki_ = 0, kd_ = 0;
+    kp_ = 1.5f, ki_ = 0, kd_ = 0.15;
 
     base_linear_velocity_ = 0.04f;
     lidar_results_ = {};
@@ -51,6 +62,30 @@ void LineLoop::Restart() {
 
 LineLoopState LineLoop::getState() const {
     return state_;
+}
+
+void LineLoop::TurnLeft()
+{
+    yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
+    state_ = LineLoopState::TURNING;
+    turn_stage_ = TurnStage::ROTATE;
+    RCLCPP_WARN(this->get_logger(), "TURNING LEFT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+}
+
+void LineLoop::TurnRight()
+{
+    yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
+    state_ = LineLoopState::TURNING;
+    turn_stage_ = TurnStage::ROTATE;
+    RCLCPP_WARN(this->get_logger(), "TURNING RIGHT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+}
+
+void LineLoop::Turn180()
+{
+    yaw_ref_ = yaw_start_ + 180;
+    state_ = LineLoopState::TURNING;
+    turn_stage_ = TurnStage::ROTATE;
+    RCLCPP_WARN(this->get_logger(), "TURNING 180 from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
 }
 
 float LineLoop::calculate_pid_angular_velocity(float left_dist, float right_dist)
@@ -77,6 +112,16 @@ float LineLoop::calculate_pid_angular_velocity(float left_dist, float right_dist
 
     previous_error_ = error;
     return output;
+}
+
+float LineLoop::calculate_left_wall_pid_angular_velocity(float left_dist)
+{
+    return calculate_pid_angular_velocity(WALL_DISTANCE, left_dist);
+}
+
+float LineLoop::calculate_right_wall_pid_angular_velocity(float right_dist)
+{
+    return calculate_pid_angular_velocity(right_dist, WALL_DISTANCE);
 }
 
 void LineLoop::maze_loop(float dtMS) {
@@ -149,17 +194,13 @@ void LineLoop::maze_loop(float dtMS) {
                     if (lidar_results_.front < MIN_FRONT_DISTANCE || !doTurn(getNextMove()))
                     {
                         RCLCPP_WARN(this->get_logger(), "PID using left wall");
-                        float inputPid = WALL_DISTANCE - lidar_results_.left;
-                        float outputPid = pid_.step(inputPid, dtMS);
+                        float angular_velocity = calculate_left_wall_pid_angular_velocity(lidar_results_.left);
+                        float linear_velocity = base_linear_velocity_;
 
-                        uint8_t l = MAX_MOTOR_SPEED + outputPid*10;
-                        uint8_t r = MAX_MOTOR_SPEED - outputPid*10;
+                        algorithms::RobotSpeed robot_speed(linear_velocity, angular_velocity);
+                        algorithms::WheelSpeed wheel_speeds = kinematics_.inverse(robot_speed);
 
-                        uint8_t outL, outR;
-                        outL = std::clamp(l, (uint8_t)130, MAX_MOTOR_SPEED);
-                        outR = std::clamp(r, (uint8_t)130, MAX_MOTOR_SPEED);
-
-                        motor_->go(outL, outR);
+                        motor_->go(convert_speed_to_command(wheel_speeds.l), convert_speed_to_command(wheel_speeds.r));
                     }
                 }
                 else if (lidar_results_.isRightClosed && lidar_results_.isLeftOpen)
@@ -167,26 +208,26 @@ void LineLoop::maze_loop(float dtMS) {
                     if (lidar_results_.front < MIN_FRONT_DISTANCE || !doTurn(getNextMove()))
                     {
                         RCLCPP_WARN(this->get_logger(), "PID using right wall");
-                        float inputPid = lidar_results_.right - WALL_DISTANCE;
-                        float outputPid = pid_.step(inputPid, dtMS);
+                        float angular_velocity = calculate_right_wall_pid_angular_velocity(lidar_results_.right);
+                        float linear_velocity = base_linear_velocity_;
 
-                        uint8_t l = MAX_MOTOR_SPEED + outputPid;
-                        uint8_t r = MAX_MOTOR_SPEED - outputPid;
+                        algorithms::RobotSpeed robot_speed(linear_velocity, angular_velocity);
+                        algorithms::WheelSpeed wheel_speeds = kinematics_.inverse(robot_speed);
 
-                        uint8_t outL, outR;
-                        outL = std::clamp(l, (uint8_t)130, MAX_MOTOR_SPEED);
-                        outR = std::clamp(r, (uint8_t)130, MAX_MOTOR_SPEED);
-
-                        motor_->go(outL, outR);
+                        motor_->go(convert_speed_to_command(wheel_speeds.l), convert_speed_to_command(wheel_speeds.r));
                     }
                 }
                 else
                 {
                     // X-section
                     // If less than min distance to be a real X-section (can be just going to T-section)
-                    //if (/*results.front < MIN_FRONT_DISTANCE || !doTurn(getNextMove())*/)
+                    if (lidar_results_.front > MIN_FRONT_DISTANCE)
                     {
                         motor_->go(135, 135);
+                    }
+                    else
+                    {
+                        Turn180();
                     }
                 }
             }
@@ -199,24 +240,15 @@ void LineLoop::maze_loop(float dtMS) {
                 if (lidar_results_.isLeftClosed && lidar_results_.isRightClosed)
                 {
                     // Dead end
-                    // turning 180
-                    yaw_ref_ = yaw_start_ + 180;
-                    state_ = LineLoopState::TURNING;
-                    RCLCPP_WARN(this->get_logger(), "TURNING 180 from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                    Turn180();
                 }
                 else if (lidar_results_.isLeftOpen && lidar_results_.isRightClosed)
                 {
-                    // turning to left
-                    yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
-                    state_ = LineLoopState::TURNING;
-                    RCLCPP_WARN(this->get_logger(), "TURNING LEFT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                    TurnLeft();
                 }
                 else if (lidar_results_.isRightOpen && lidar_results_.isLeftClosed)
                 {
-                    // turning to right
-                    yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
-                    state_ = LineLoopState::TURNING;
-                    RCLCPP_WARN(this->get_logger(), "TURNING RIGHT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+                    TurnRight();
                 }
                 else
                 {
@@ -269,35 +301,36 @@ void LineLoop::maze_loop(float dtMS) {
             }
             else if (lidar_results_.isRightOpen && lidar_results_.isLeftClosed)
             {
-                float inputPid = WALL_DISTANCE - lidar_results_.left;
-                float outputPid = pid_.step(inputPid, dtMS);
+                RCLCPP_WARN(this->get_logger(), "PID using left wall");
+                float angular_velocity = calculate_left_wall_pid_angular_velocity(lidar_results_.left);
+                float linear_velocity = base_linear_velocity_;
 
-                uint8_t l = MAX_MOTOR_SPEED + outputPid;
-                uint8_t r = MAX_MOTOR_SPEED - outputPid;
+                algorithms::RobotSpeed robot_speed(linear_velocity, angular_velocity);
+                algorithms::WheelSpeed wheel_speeds = kinematics_.inverse(robot_speed);
 
-                uint8_t outL, outR;
-                outL = std::clamp(l, (uint8_t)120, MAX_MOTOR_SPEED);
-                outR = std::clamp(r, (uint8_t)120, MAX_MOTOR_SPEED);
-
-                motor_->go(outL, outR);
+                motor_->go(convert_speed_to_command(wheel_speeds.l), convert_speed_to_command(wheel_speeds.r));
             }
             else if (lidar_results_.isRightClosed && lidar_results_.isLeftOpen)
             {
-                float inputPid = lidar_results_.right - WALL_DISTANCE;
-                float outputPid = pid_.step(inputPid, dtMS);
+                RCLCPP_WARN(this->get_logger(), "PID using right wall");
+                float angular_velocity = calculate_right_wall_pid_angular_velocity(lidar_results_.right);
+                float linear_velocity = base_linear_velocity_;
 
-                uint8_t l = MAX_MOTOR_SPEED + outputPid;
-                uint8_t r = MAX_MOTOR_SPEED - outputPid;
+                algorithms::RobotSpeed robot_speed(linear_velocity, angular_velocity);
+                algorithms::WheelSpeed wheel_speeds = kinematics_.inverse(robot_speed);
 
-                uint8_t outL, outR;
-                outL = std::clamp(l, (uint8_t)120, MAX_MOTOR_SPEED);
-                outR = std::clamp(r, (uint8_t)120, MAX_MOTOR_SPEED);
-
-                motor_->go(outL, outR);
+                motor_->go(convert_speed_to_command(wheel_speeds.l), convert_speed_to_command(wheel_speeds.r));
             }
             else
             {
-                motor_->go(135, 135);
+                if (lidar_results_.front > FRONT_WALL_DISTANCE)
+                {
+                    motor_->go(135, 135);
+                }
+                else
+                {
+                    Turn180();
+                }
             }
         }
         break;
@@ -307,24 +340,52 @@ void LineLoop::maze_loop(float dtMS) {
             // Rotate until yaw changes by ±90°
             // Then return to CORRIDOR_FOLLOWING
         {
-            float current_yaw = imu_->getIntegratedResults();
-            float yaw_error = yaw_ref_ - current_yaw;
-
-            if (std::abs(yaw_error) < MAX_YAW_ERROR)
+            switch (turn_stage_)
             {
-                state_ = LineLoopState::AFTER_TURNING;
-                RCLCPP_WARN(this->get_logger(), "State AFTER TURNING yaw_start: %.2f°, yaw_ref: %.2f°, current_yaw: %.2f°", yaw_start_, yaw_ref_, current_yaw);
+                case TurnStage::FORWARD_TO_EDGE:
+                {
+                    if (lidar_results_.front > initial_front_ - DELTA_TO_TURN &&
+                        lidar_results_.front > FRONT_WALL_DISTANCE)
+                    {
+                        motor_->go(138, 138);  // Keep going forward
+                    }
+                    else
+                    {
+                        motor_->go(127, 127); // Stop
+                        turn_stage_ = TurnStage::ROTATE;
+                    }
+                }
+                break;
 
-                if (nextMove_ == Right || nextMove_ == Left || nextMove_ == TreasureRight || nextMove_ == TreasureLeft)
-                    nextMove_ = None;
-            }
-            else
-            {
-                uint8_t l = 127 - (MAX_TURNING_MOTOR_SPEED * sgn(yaw_error));
-                uint8_t r = 127 + (MAX_TURNING_MOTOR_SPEED * sgn(yaw_error));
+                case TurnStage::ROTATE:
+                {
+                    float current_yaw = imu_->getIntegratedResults();
+                    float yaw_error = yaw_ref_ - current_yaw;
 
-                motor_->go(l, r);
-                RCLCPP_INFO(this->get_logger(), "PID :: outL:%u outR:%u", l, r);
+                    if (std::abs(yaw_error) < MAX_YAW_ERROR)
+                    {
+                        state_ = LineLoopState::AFTER_TURNING;
+                        turn_stage_ = TurnStage::DONE;
+                        RCLCPP_WARN(this->get_logger(), "Finished TURNING: %.2f°", current_yaw);
+                        RCLCPP_WARN(this->get_logger(), "State AFTER TURNING yaw_start: %.2f°, yaw_ref: %.2f°", yaw_start_, yaw_ref_);
+
+                        if (nextMove_ == Right || nextMove_ == Left || nextMove_ == TreasureRight || nextMove_ == TreasureLeft)
+                            nextMove_ = None;
+                    }
+                    else
+                    {
+                        uint8_t l = 127 - (MAX_TURNING_MOTOR_SPEED * sgn(yaw_error));
+                        uint8_t r = 127 + (MAX_TURNING_MOTOR_SPEED * sgn(yaw_error));
+
+                        motor_->go(l, r);
+                        RCLCPP_INFO(this->get_logger(), "PID :: outL:%u outR:%u", l, r);
+                    }
+                }
+                break;
+
+                case TurnStage::DONE:
+                default:
+                break;
             }
         }
         break;
@@ -346,55 +407,28 @@ ArucoType LineLoop::getNextMove()
 bool LineLoop::doTurn(const ArucoType nextMove)
 {
     yaw_start_ = imu_->getIntegratedResults();
+    initial_front_ = lidar_results_.front;
 
     switch (nextMove)
     {
         case ArucoType::TreasureLeft:
         case ArucoType::Left:
-        {
-            float lastPos = lidar_results_.front;
-
-            while(lidar_results_.front > lastPos-DELTA_TO_TURN && lidar_results_.front > FRONT_WALL_DISTANCE)
-            {
-                motor_->go(138, 138);
-            }
-
             yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
-            RCLCPP_WARN(this->get_logger(), "doTurn LEFT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+            turn_stage_ = TurnStage::FORWARD_TO_EDGE;
             state_ = LineLoopState::TURNING;
             return true;
-        }
-        break;
 
         case ArucoType::TreasureRight:
         case ArucoType::Right:
-        {
-            float lastPos = lidar_results_.front;
-
-            while(lidar_results_.front > lastPos-DELTA_TO_TURN && lidar_results_.front > FRONT_WALL_DISTANCE)
-            {
-                RCLCPP_WARN(this->get_logger(), "front {%.3f} > lastPos - DELTA_TO_TURN {%.3f}", lidar_results_.front, lastPos-DELTA_TO_TURN);
-                motor_->go(138, 138);
-            }
-
-            RCLCPP_WARN(this->get_logger(), "front {%.3f} <= lastPos - DELTA_TO_TURN {%.3f}", lidar_results_.front , lastPos-DELTA_TO_TURN);
-            motor_->go(127, 127);
-
             yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
-            RCLCPP_WARN(this->get_logger(), "doTurn RIGHT from: %.2f°,  %.2f°", yaw_start_, yaw_ref_);
+            turn_stage_ = TurnStage::FORWARD_TO_EDGE;
             state_ = LineLoopState::TURNING;
             return true;
-        }
-        break;
 
-        default:
-        case ArucoType::TreasureStraight:
         case ArucoType::Straight:
-        {
-            RCLCPP_WARN(this->get_logger(), "doTurn Straight");
+        case ArucoType::TreasureStraight:
+        default:
             return false;
-        }
-        break;
     }
 }
 

@@ -30,7 +30,7 @@ static const float MIN_FRONT_DISTANCE = 0.75f;
 static const float FRONT_WALL_DISTANCE = 0.25f;
 static const float WALL_DISTANCE = 0.22f;
 static const float MIN_OPEN_SIDE_DISTANCE = 0.4f;
-static const float DELTA_TO_TURN = 0.10f;
+static const float DELTA_TO_TURN = 0.15f;
 
 // In degrees
 static const float MAX_YAW_ERROR = 7.f;
