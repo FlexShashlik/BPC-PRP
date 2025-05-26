@@ -15,7 +15,6 @@ static const int MAIN_LOOP_PERIOD_MS = 50;
 static const int TICKS_PER_ROTATION = 576;
 static const double WHEEL_RADIUS_METERS = 0.06517/2;
 static const double WHEEL_BASE_METERS = 0.133;
-static const double LOOP_POLLING_RATE_MS = 10;
 static const double ENCODER_POLLING_RATE_MS = 1;
 
 static const uint8_t MIN_MOTOR_SPEED = 127;
@@ -28,9 +27,10 @@ static const int LINE_SENSORS_DEADZONE = 15;
 
 // In meters
 static const float MIN_FRONT_DISTANCE = 0.75f;
-static const float WALL_DISTANCE = 0.25f;
+static const float FRONT_WALL_DISTANCE = 0.25f;
+static const float WALL_DISTANCE = 0.22f;
 static const float MIN_OPEN_SIDE_DISTANCE = 0.4f;
-static const float DELTA_TO_TURN = 0.14f;
+static const float DELTA_TO_TURN = 0.10f;
 
 // In degrees
 static const float MAX_YAW_ERROR = 7.f;

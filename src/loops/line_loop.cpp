@@ -13,12 +13,12 @@
 #include "nodes/motor_node.hpp"
 
 LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<nodes::ImuNode> imu, std::shared_ptr<nodes::MotorNode> motor) : Node(
-        "lineLoopNode"), pid_(10, 0, 0), last_time_(this->now()), kinematics_(0.033, 0.16, 360) {
+        "lineLoopNode"), pid_(5, 0, 0), last_time_(this->now()), kinematics_(0.033, 0.16, 360) {
     this->get_logger().set_level(rclcpp::Logger::Level::Warn);
     // Create a timer
-    timer_ = this->create_wall_timer(
+    /*timer_ = this->create_wall_timer(
         std::chrono::milliseconds(static_cast<int>(LOOP_POLLING_RATE_MS)),
-        std::bind(&LineLoop::line_loop_timer_callback, this));
+        std::bind(&LineLoop::line_loop_timer_callback, this));*/
 
     lidar_subscriber_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
                 Topic::lidar_avg, 1,
@@ -40,6 +40,8 @@ LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<n
 
     base_linear_velocity_ = 0.04f;
     lidar_results_ = {};
+
+    last_time_ = this->now();
 }
 
 void LineLoop::Restart() {
@@ -77,7 +79,7 @@ float LineLoop::calculate_pid_angular_velocity(float left_dist, float right_dist
     return output;
 }
 
-void LineLoop::line_loop_timer_callback() {
+void LineLoop::maze_loop(float dtMS) {
     if (imu_->getMode() == nodes::ImuNodeMode::CALIBRATE)
     {
         state_ = LineLoopState::CALIBRATION;
@@ -85,6 +87,7 @@ void LineLoop::line_loop_timer_callback() {
     }
     if (!isCalibrated_ && imu_->getMode() != nodes::ImuNodeMode::CALIBRATE)
     {
+        RCLCPP_WARN(this->get_logger(), "IMU is calibrated");
         isCalibrated_ = true;
         state_ = LineLoopState::CORRIDOR_FOLLOWING;
         RCLCPP_INFO(this->get_logger(), "State CORRIDOR_FOLLOWING");
@@ -129,7 +132,7 @@ void LineLoop::line_loop_timer_callback() {
                     return;
             }
 
-            if (lidar_results_.front > WALL_DISTANCE)
+            if (lidar_results_.front > FRONT_WALL_DISTANCE)
             {
                 if (lidar_results_.isRightClosed && lidar_results_.isLeftClosed)
                 {
@@ -146,8 +149,8 @@ void LineLoop::line_loop_timer_callback() {
                     if (lidar_results_.front < MIN_FRONT_DISTANCE || !doTurn(getNextMove()))
                     {
                         RCLCPP_WARN(this->get_logger(), "PID using left wall");
-                        float inputPid = 0.22f - lidar_results_.left;
-                        float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
+                        float inputPid = WALL_DISTANCE - lidar_results_.left;
+                        float outputPid = pid_.step(inputPid, dtMS);
 
                         uint8_t l = MAX_MOTOR_SPEED + outputPid*10;
                         uint8_t r = MAX_MOTOR_SPEED - outputPid*10;
@@ -164,8 +167,8 @@ void LineLoop::line_loop_timer_callback() {
                     if (lidar_results_.front < MIN_FRONT_DISTANCE || !doTurn(getNextMove()))
                     {
                         RCLCPP_WARN(this->get_logger(), "PID using right wall");
-                        float inputPid = lidar_results_.right - 0.22f;
-                        float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
+                        float inputPid = lidar_results_.right - WALL_DISTANCE;
+                        float outputPid = pid_.step(inputPid, dtMS);
 
                         uint8_t l = MAX_MOTOR_SPEED + outputPid;
                         uint8_t r = MAX_MOTOR_SPEED - outputPid;
@@ -266,8 +269,8 @@ void LineLoop::line_loop_timer_callback() {
             }
             else if (lidar_results_.isRightOpen && lidar_results_.isLeftClosed)
             {
-                float inputPid = 0.22 - lidar_results_.left;
-                float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
+                float inputPid = WALL_DISTANCE - lidar_results_.left;
+                float outputPid = pid_.step(inputPid, dtMS);
 
                 uint8_t l = MAX_MOTOR_SPEED + outputPid;
                 uint8_t r = MAX_MOTOR_SPEED - outputPid;
@@ -280,8 +283,8 @@ void LineLoop::line_loop_timer_callback() {
             }
             else if (lidar_results_.isRightClosed && lidar_results_.isLeftOpen)
             {
-                float inputPid = lidar_results_.right - 0.22f;
-                float outputPid = pid_.step(inputPid, LOOP_POLLING_RATE_MS);
+                float inputPid = lidar_results_.right - WALL_DISTANCE;
+                float outputPid = pid_.step(inputPid, dtMS);
 
                 uint8_t l = MAX_MOTOR_SPEED + outputPid;
                 uint8_t r = MAX_MOTOR_SPEED - outputPid;
@@ -350,12 +353,10 @@ bool LineLoop::doTurn(const ArucoType nextMove)
         case ArucoType::Left:
         {
             float lastPos = lidar_results_.front;
-            float front = lidar_results_.front;
 
-            while(front > lastPos-DELTA_TO_TURN && front > WALL_DISTANCE)
+            while(lidar_results_.front > lastPos-DELTA_TO_TURN && lidar_results_.front > FRONT_WALL_DISTANCE)
             {
                 motor_->go(138, 138);
-                front = lidar_results_.front;
             }
 
             yaw_ref_ = rad2deg(deg2rad(yaw_start_) + (M_PI / 2));
@@ -369,14 +370,14 @@ bool LineLoop::doTurn(const ArucoType nextMove)
         case ArucoType::Right:
         {
             float lastPos = lidar_results_.front;
-            float front = lidar_results_.front;
 
-            while(front > lastPos-DELTA_TO_TURN && front > WALL_DISTANCE)
+            while(lidar_results_.front > lastPos-DELTA_TO_TURN && lidar_results_.front > FRONT_WALL_DISTANCE)
             {
+                RCLCPP_WARN(this->get_logger(), "front {%.3f} > lastPos - DELTA_TO_TURN {%.3f}", lidar_results_.front, lastPos-DELTA_TO_TURN);
                 motor_->go(138, 138);
-                front = lidar_results_.front;
             }
 
+            RCLCPP_WARN(this->get_logger(), "front {%.3f} <= lastPos - DELTA_TO_TURN {%.3f}", lidar_results_.front , lastPos-DELTA_TO_TURN);
             motor_->go(127, 127);
 
             yaw_ref_ = rad2deg(deg2rad(yaw_start_) - (M_PI / 2));
@@ -398,17 +399,23 @@ bool LineLoop::doTurn(const ArucoType nextMove)
 }
 
 void LineLoop::on_lidar_msg(const std_msgs::msg::Float32MultiArray::SharedPtr msg) {
-    if (msg->data.size() >= 5)
-    {
-        lidar_results_.front = msg->data[0];
-        lidar_results_.right = msg->data[1];
-        lidar_results_.left = msg->data[2];
-        lidar_results_.wide_right = msg->data[3];
-        lidar_results_.wide_left = msg->data[4];
-        lidar_results_.isRightOpen = static_cast<bool>(msg->data[5]);
-        lidar_results_.isLeftOpen = static_cast<bool>(msg->data[6]);
-        lidar_results_.isRightClosed = static_cast<bool>(msg->data[7]);
-        lidar_results_.isLeftClosed = static_cast<bool>(msg->data[8]);
-        lidar_results_.isFrontWallFarEnoughToUsePIDForCorridorFollowing = static_cast<bool>(msg->data[9]);
-    }
+    if (msg->data.size() < 5)
+        return;
+
+    lidar_results_.front = msg->data[0];
+    lidar_results_.right = msg->data[1];
+    lidar_results_.left = msg->data[2];
+    lidar_results_.wide_right = msg->data[3];
+    lidar_results_.wide_left = msg->data[4];
+    lidar_results_.isRightOpen = static_cast<bool>(msg->data[5]);
+    lidar_results_.isLeftOpen = static_cast<bool>(msg->data[6]);
+    lidar_results_.isRightClosed = static_cast<bool>(msg->data[7]);
+    lidar_results_.isLeftClosed = static_cast<bool>(msg->data[8]);
+    lidar_results_.isFrontWallFarEnoughToUsePIDForCorridorFollowing = static_cast<bool>(msg->data[9]);
+
+    auto current_time = this->now();
+    auto delta = current_time - last_time_;
+    float delta_ms = static_cast<float>(delta.nanoseconds()) / 1e6;
+    last_time_ = current_time;
+    maze_loop(delta_ms);
 }

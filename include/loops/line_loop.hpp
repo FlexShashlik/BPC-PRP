@@ -37,7 +37,7 @@ public:
 
 private:
     algorithms::Pid pid_;
-    void line_loop_timer_callback();
+    void maze_loop(float dtMS);
     ArucoType getNextMove();
     bool doTurn(ArucoType nextMove);
 
