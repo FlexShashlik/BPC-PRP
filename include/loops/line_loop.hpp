@@ -42,16 +42,12 @@ public:
     LineLoopState getState() const;
 
     void TurnLeft(TurnStage turn_stage = TurnStage::ROTATE);
-
     void TurnRight(TurnStage turn_stage = TurnStage::ROTATE);
-
     void Turn180(TurnStage turn_stage = TurnStage::ROTATE);
 
-    float calculate_pid_angular_velocity(float left_dist, float right_dist);
-
-    float calculate_left_wall_pid_angular_velocity(float left_dist);
-
-    float calculate_right_wall_pid_angular_velocity(float right_dist);
+    float calculate_pid_angular_velocity(float left_dist, float right_dist, float dt);
+    float calculate_left_wall_pid_angular_velocity(float left_dist, float dt);
+    float calculate_right_wall_pid_angular_velocity(float right_dist, float dt);
 
 private:
     algorithms::Pid pid_;

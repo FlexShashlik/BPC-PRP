@@ -18,8 +18,8 @@ static const double WHEEL_BASE_METERS = 0.133;
 static const double ENCODER_POLLING_RATE_MS = 1;
 
 static const uint8_t MIN_MOTOR_SPEED = 127;
-static const uint8_t MAX_MOTOR_SPEED = 140;
-static const uint8_t MAX_TURNING_MOTOR_SPEED = 5;
+static const uint8_t MAX_MOTOR_SPEED = 180;
+static const uint8_t MAX_TURNING_MOTOR_SPEED = 12;
 
 
 static const float LINE_SENSOR_MAX_CALIBRATED_BLACK = 200;
@@ -27,13 +27,13 @@ static const int LINE_SENSORS_DEADZONE = 15;
 
 // In meters
 static const float MIN_FRONT_DISTANCE = 0.75f;
-static const float FRONT_WALL_DISTANCE = 0.25f;
+static const float FRONT_WALL_DISTANCE = 0.23f;
 static const float WALL_DISTANCE = 0.22f;
 static const float MIN_OPEN_SIDE_DISTANCE = 0.4f;
 static const float DELTA_TO_TURN = 0.16f;
 
 // In degrees
-static const float MAX_YAW_ERROR = 5.f;
+static const float MAX_YAW_ERROR = 15.f;
 
 namespace Topic {
     const std::string buttons = "/bpc_prp_robot/buttons";
@@ -112,10 +112,14 @@ template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
+inline double roundUpTo90(double angle) {
+    return std::round(angle / 90.0) * 90.0;
+}
+
 inline uint8_t convert_speed_to_command(float wheel_speed)
 {
     int command = 127 + static_cast<int>(std::round(10 * wheel_speed));
-    command = std::min(255, std::max(0, command));
+    command = std::min(255, std::max(MIN_MOTOR_SPEED + 5, command));
     return static_cast<uint8_t>(command);
 }
 
