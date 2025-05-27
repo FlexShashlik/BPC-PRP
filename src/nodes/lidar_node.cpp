@@ -50,7 +50,7 @@ void nodes::LidarNode::on_lidar_msg(const sensor_msgs::msg::LaserScan::SharedPtr
 
         lidar_avg_publisher_->publish(avg_msg);
 
-        RCLCPP_WARN
+        RCLCPP_INFO
         (
             this->get_logger(),
             "LIDAR :: F:%.4f B:%.4f L:%.4f R:%.4f FL:%.4f FR:%.4f WL:%.4f WR:%.4f",

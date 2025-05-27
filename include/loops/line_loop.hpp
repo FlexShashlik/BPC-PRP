@@ -86,7 +86,6 @@ private:
     float previous_error_;
     float kp_, ki_, kd_;
 
-    float base_linear_velocity_;
     algorithms::Kinematics kinematics_;
 
     TurnStage turn_stage_ = TurnStage::INIT;

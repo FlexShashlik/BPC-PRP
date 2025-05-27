@@ -34,7 +34,6 @@ LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<n
     previous_error_ = 0;
     kp_ = .5f, ki_ = 0, kd_ = 0;
 
-    base_linear_velocity_ = 0.04f;
     lidar_results_ = {};
 
     last_time_ = this->now();
@@ -103,6 +102,8 @@ float LineLoop::calculate_pid_angular_velocity(const float left_dist, const floa
 
     previous_error_ = error;
 
+    output = std::clamp(output, -MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY);
+    RCLCPP_WARN(this->get_logger(), "Out: %.2f", output);
     return output;
 }
 
@@ -174,7 +175,7 @@ void LineLoop::maze_loop(float dtMS) {
                 if (lidar_results_.isRightClosed && lidar_results_.isLeftClosed)
                 {
                     float angular_velocity = calculate_pid_angular_velocity(lidar_results_.left, lidar_results_.right, dtMS);
-                    float linear_velocity = base_linear_velocity_;
+                    float linear_velocity = BASE_LINEAR_VELOCITY;
 
                     algorithms::RobotSpeed robot_speed(linear_velocity, angular_velocity);
                     algorithms::WheelSpeed wheel_speeds = kinematics_.inverse(robot_speed);
@@ -187,7 +188,7 @@ void LineLoop::maze_loop(float dtMS) {
                     {
                         RCLCPP_WARN(this->get_logger(), "PID using left wall");
                         float angular_velocity = calculate_left_wall_pid_angular_velocity(lidar_results_.wide_left, dtMS);
-                        float linear_velocity = base_linear_velocity_;
+                        float linear_velocity = BASE_LINEAR_VELOCITY;
 
                         algorithms::RobotSpeed robot_speed(linear_velocity, angular_velocity);
                         algorithms::WheelSpeed wheel_speeds = kinematics_.inverse(robot_speed);
@@ -201,7 +202,7 @@ void LineLoop::maze_loop(float dtMS) {
                     {
                         RCLCPP_WARN(this->get_logger(), "PID using right wall");
                         float angular_velocity = calculate_right_wall_pid_angular_velocity(lidar_results_.wide_right, dtMS);
-                        float linear_velocity = base_linear_velocity_;
+                        float linear_velocity = BASE_LINEAR_VELOCITY;
 
                         algorithms::RobotSpeed robot_speed(linear_velocity, angular_velocity);
                         algorithms::WheelSpeed wheel_speeds = kinematics_.inverse(robot_speed);
@@ -212,7 +213,7 @@ void LineLoop::maze_loop(float dtMS) {
                 else
                 {
                     // X-section
-                    motor_->go(135, 135);
+                    motor_->go(MAX_MOTOR_SPEED, MAX_MOTOR_SPEED);
                 }
             }
             else // Closed turns (no way forward)
@@ -289,7 +290,7 @@ void LineLoop::maze_loop(float dtMS) {
                 {
                     RCLCPP_WARN(this->get_logger(), "PID using left wall");
                     float angular_velocity = calculate_left_wall_pid_angular_velocity(lidar_results_.wide_left, dtMS);
-                    float linear_velocity = base_linear_velocity_;
+                    float linear_velocity = BASE_LINEAR_VELOCITY;
 
                     algorithms::RobotSpeed robot_speed(linear_velocity, angular_velocity);
                     algorithms::WheelSpeed wheel_speeds = kinematics_.inverse(robot_speed);
@@ -300,7 +301,7 @@ void LineLoop::maze_loop(float dtMS) {
                 {
                     RCLCPP_WARN(this->get_logger(), "PID using right wall");
                     float angular_velocity = calculate_right_wall_pid_angular_velocity(lidar_results_.wide_right, dtMS);
-                    float linear_velocity = base_linear_velocity_;
+                    float linear_velocity = BASE_LINEAR_VELOCITY;
 
                     algorithms::RobotSpeed robot_speed(linear_velocity, angular_velocity);
                     algorithms::WheelSpeed wheel_speeds = kinematics_.inverse(robot_speed);
@@ -309,7 +310,7 @@ void LineLoop::maze_loop(float dtMS) {
                 }
                 else
                 {
-                    motor_->go(135, 135);
+                    motor_->go(MAX_MOTOR_SPEED, MAX_MOTOR_SPEED);
                 }
             }
             else
