@@ -21,8 +21,10 @@ static const uint8_t MIN_MOTOR_SPEED = 127;
 static const uint8_t MAX_MOTOR_SPEED = 145;
 static const uint8_t MAX_TURNING_MOTOR_SPEED = 12;
 
+static const int GYRO_CALIBRATION_SAMPLE_COUNT = 300;
+
 static const float BASE_LINEAR_VELOCITY = 0.04;
-static const float MAX_ANGULAR_VELOCITY = 0.05; // rad/s
+static const float MAX_ANGULAR_VELOCITY = 0.04; // rad/s
 
 
 static const float LINE_SENSOR_MAX_CALIBRATED_BLACK = 200;

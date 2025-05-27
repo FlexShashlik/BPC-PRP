@@ -33,7 +33,7 @@ void nodes::ImuNode::reset_imu() {
 }
 
 void nodes::ImuNode::calibrate(float gyro_z) {
-    if (gyro_calibration_samples_.size() < 200)
+    if (gyro_calibration_samples_.size() < GYRO_CALIBRATION_SAMPLE_COUNT)
     {
         gyro_calibration_samples_.push_back(gyro_z);
         planar_integrator_.setCalibration(gyro_calibration_samples_);
