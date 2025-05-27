@@ -57,10 +57,15 @@ void nodes::CameraNode::on_camera_msg(std::shared_ptr<sensor_msgs::msg::Compress
     auto arucos = aruco_detector_.detect(image);
     // Storing only last 2 arucos, because only 2 max can be in a square
     if (!arucos.empty() && arucos_.size() > 2)
+    {
         arucos_.clear();
+        RCLCPP_INFO(this->get_logger(), "Clearing arucos");
+    }
 
     for (const auto &aruco: arucos)
     {
+        RCLCPP_INFO(this->get_logger(), "Detected aruco id: %d", aruco.id);
+
         bool exists = std::any_of
         (
             arucos_.begin(),
@@ -76,7 +81,7 @@ void nodes::CameraNode::on_camera_msg(std::shared_ptr<sensor_msgs::msg::Compress
             if (aruco.id >= ArucoType::TreasureStraight)
                 isTreasureDetected_ = true;
 
-            RCLCPP_INFO(this->get_logger(), "Detected aruco id: %d", aruco.id);
+            RCLCPP_INFO(this->get_logger(), "Adding aruco id: %d", aruco.id);
             arucos_.push_back(static_cast<ArucoType>(aruco.id));
         }
     }

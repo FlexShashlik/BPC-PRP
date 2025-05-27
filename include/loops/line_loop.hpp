@@ -16,6 +16,14 @@ namespace nodes {
     class ImuNode;
 }
 
+// TurnStages to distinguish closed rotations and rotations inside X-sections where we need to detect turning point from the edge of the wall
+enum class TurnStage {
+    INIT,
+    FORWARD_TO_EDGE,
+    ROTATE,
+    DONE
+};
+
 enum class LineLoopState {
     CALIBRATION,
     CORRIDOR_FOLLOWING,
@@ -33,11 +41,11 @@ public:
 
     LineLoopState getState() const;
 
-    void TurnLeft();
+    void TurnLeft(TurnStage turn_stage = TurnStage::ROTATE);
 
-    void TurnRight();
+    void TurnRight(TurnStage turn_stage = TurnStage::ROTATE);
 
-    void Turn180();
+    void Turn180(TurnStage turn_stage = TurnStage::ROTATE);
 
     float calculate_pid_angular_velocity(float left_dist, float right_dist);
 
@@ -84,6 +92,9 @@ private:
 
     float base_linear_velocity_;
     algorithms::Kinematics kinematics_;
+
+    TurnStage turn_stage_ = TurnStage::INIT;
+    float initial_front_ = 0.0f;
 };
 
 
