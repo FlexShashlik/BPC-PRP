@@ -19,7 +19,7 @@ static const double ENCODER_POLLING_RATE_MS = 1;
 
 static const uint8_t MIN_MOTOR_SPEED = 127;
 static const uint8_t MAX_MOTOR_SPEED = 145;
-static const uint8_t MAX_TURNING_MOTOR_SPEED = 12;
+static const uint8_t MAX_TURNING_MOTOR_SPEED = 10;
 
 static const int GYRO_CALIBRATION_SAMPLE_COUNT = 300;
 
@@ -38,7 +38,7 @@ static const float MIN_OPEN_SIDE_DISTANCE = 0.4f;
 static const float DELTA_TO_TURN = 0.16f;
 
 // In degrees
-static const float MAX_YAW_ERROR = 15.f;
+static const float MAX_YAW_ERROR = 13.f;
 
 namespace Topic {
     const std::string buttons = "/bpc_prp_robot/buttons";

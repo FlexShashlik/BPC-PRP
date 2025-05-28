@@ -32,7 +32,7 @@ LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<n
 
     integral_ = 0;
     previous_error_ = 0;
-    kp_ = .5f, ki_ = 0, kd_ = 0;
+    kp_ = .6f, ki_ = 0, kd_ = 0;
 
     lidar_results_ = {};
 
@@ -425,11 +425,15 @@ bool LineLoop::doTurn(const ArucoType nextMove)
     {
         case ArucoType::TreasureLeft:
         case ArucoType::Left:
+            if (lidar_results_.isLeftClosed)
+                return false;
             TurnLeft(TurnStage::FORWARD_TO_EDGE);
             return true;
 
         case ArucoType::TreasureRight:
         case ArucoType::Right:
+            if (lidar_results_.isRightClosed)
+                return false;
             TurnRight(TurnStage::FORWARD_TO_EDGE);
             return true;
 
