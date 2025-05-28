@@ -18,13 +18,13 @@ static const double WHEEL_BASE_METERS = 0.133;
 static const double ENCODER_POLLING_RATE_MS = 1;
 
 static const uint8_t MIN_MOTOR_SPEED = 127;
-static const uint8_t MAX_MOTOR_SPEED = 145;
+static const uint8_t MAX_MOTOR_SPEED = 175;
 static const uint8_t MAX_TURNING_MOTOR_SPEED = 10;
 
 static const int GYRO_CALIBRATION_SAMPLE_COUNT = 300;
 
-static const float BASE_LINEAR_VELOCITY = 0.04;
-static const float MAX_ANGULAR_VELOCITY = 0.04; // rad/s
+static const float BASE_LINEAR_VELOCITY = 0.07;
+static const float MAX_ANGULAR_VELOCITY = 0.08; // rad/s
 
 
 static const float LINE_SENSOR_MAX_CALIBRATED_BLACK = 200;
@@ -32,9 +32,9 @@ static const int LINE_SENSORS_DEADZONE = 15;
 
 // In meters
 static const float MIN_FRONT_DISTANCE = 0.75f;
-static const float FRONT_WALL_DISTANCE = 0.23f;
-static const float WALL_DISTANCE = 0.22f;
-static const float MIN_OPEN_SIDE_DISTANCE = 0.4f;
+static const float FRONT_WALL_DISTANCE = 0.24f;
+static const float WALL_DISTANCE = 0.2f;
+static const float MIN_OPEN_SIDE_DISTANCE = 0.35f;
 static const float DELTA_TO_TURN = 0.16f;
 
 // In degrees

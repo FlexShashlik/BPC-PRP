@@ -32,7 +32,7 @@ LineLoop::LineLoop (std::shared_ptr<nodes::CameraNode> camera, std::shared_ptr<n
 
     integral_ = 0;
     previous_error_ = 0;
-    kp_ = .6f, ki_ = 0, kd_ = 0;
+    kp_ = 1.3f, ki_ = 0, kd_ = 0;
 
     lidar_results_ = {};
 
@@ -213,7 +213,7 @@ void LineLoop::maze_loop(float dtMS) {
                 else
                 {
                     // X-section
-                    motor_->go(MAX_MOTOR_SPEED, MAX_MOTOR_SPEED);
+                    motor_->go(150, 150);
                 }
             }
             else // Closed turns (no way forward)
@@ -310,7 +310,7 @@ void LineLoop::maze_loop(float dtMS) {
                 }
                 else
                 {
-                    motor_->go(MAX_MOTOR_SPEED, MAX_MOTOR_SPEED);
+                    motor_->go(150, 150);
                 }
             }
             else
